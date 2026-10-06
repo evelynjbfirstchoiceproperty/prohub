@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- V85 Visitor Analytics requires the SQL setup supplied with this version. It creates public.website_visitors with anon INSERT + authenticated SELECT. -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evelyn Property Hub</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+</script>
+<style>
+*{box-sizing:border-box}#adminWorkspace{display:none} body.customer-mode #adminWorkspace{display:none!important} body.customer-mode #customerView{display:block!important}
+#adminSearchPage ~ *{} body{font-family:Arial,sans-serif;margin:0;background:#f5f6f8;color:#222}.header{background:#111827;color:#fff;padding:25px}.header h1{margin:0 0 8px}.container{max-width:1500px;margin:25px auto;padding:0 20px}.topbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}.btn,.tab,.statebtn{touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:relative;z-index:2;padding:11px 16px;border:0;border-radius:9px;background:#111827;color:#fff;font-weight:bold;cursor:pointer}.btn.light,.tab,.statebtn{background:#fff;color:#222;border:1px solid #ddd}.btn.danger{background:#b91c1c}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}.tab{padding:16px;font-size:16px}.tab.active,.statebtn.active{background:#111827;color:#fff}.section{display:none}.section.active{display:block}.upload-box,.property,.searchbox,.dashboard{background:#fff;padding:20px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 8px #00000012}.upload-box input[type=file]{margin-top:10px}.search{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;font-size:15px}.count{margin:12px 0;font-weight:bold}.states{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.property-title{font-size:20px;font-weight:bold;margin-bottom:5px}.property-toggle{cursor:pointer;padding:4px 0}.property-toggle::-webkit-details-marker{color:#667085}.property-toggle::after{content:"  ▾";color:#667085;font-size:13px}.property-toggle:only-child::after{content:""}.property-details{margin-top:10px}.property-sub{color:#667085;font-size:13px;margin-bottom:12px}.property-table{width:100%;border-collapse:collapse}.property-table th,.property-table td{border:1px solid #ddd;padding:9px;text-align:left;vertical-align:top}.property-table th{width:230px;background:#f3f4f6}.no-data{text-align:center;background:#fff;padding:30px;border-radius:12px;color:#777}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.stat{background:#fff;padding:15px;border-radius:10px}.stat b{display:block;font-size:24px;margin-bottom:5px}.log{font-size:13px;color:#475467;max-height:140px;overflow:auto}.photo-grid{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.photo-grid img{width:140px;height:105px;object-fit:cover;border-radius:8px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.modal{pointer-events:none;position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:20px;z-index:200000!important}.modal.show{display:flex!important;pointer-events:auto!important;z-index:200000!important}.modalbox{background:#fff;width:min(900px,100%);max-height:90vh;overflow:auto;border-radius:14px;padding:20px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.formfield label{display:block;font-size:12px;font-weight:bold;margin-bottom:5px}.formfield input,.formfield textarea,.formfield select{width:100%;padding:9px;border:1px solid #ccc;border-radius:7px}.formfield textarea{min-height:90px}.full{grid-column:1/-1}a.drive{display:inline-block;background:#111827;color:#fff;padding:9px 14px;border-radius:7px;text-decoration:none}@media(max-width:850px){.tabs,.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.tabs,.stats,.formgrid{grid-template-columns:1fr}.property-table th{width:120px}}
+.auth-overlay{pointer-events:auto;position:fixed;inset:0;background:rgba(17,24,39,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}.auth-box{background:#fff;width:min(420px,100%);padding:28px;border-radius:16px;box-shadow:0 20px 60px #0005}.auth-box h2{margin-top:0}.auth-box input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin:8px 0 14px}.auth-note{font-size:13px;color:#667085;margin-top:10px}.customer-only{display:none}.customer-hero{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;padding:24px;border-radius:16px;margin-bottom:18px}.customer-hero h2{margin:0 0 6px}.customer-hero p{margin:0 0 16px;opacity:.9}.customer-hero .btn{font-size:16px;padding:12px 18px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.admin-badge{display:inline-flex;align-items:center;padding:10px 14px;border-radius:9px;background:#dcfce7;color:#166534;font-weight:bold}.admin-note{padding:12px 14px;border-radius:9px;background:#f0fdf4;color:#166534;margin-bottom:15px;font-size:13px}
+#adminWorkspace{display:none} body.admin-mode #adminWorkspace{display:block}
+#adminSearchPage + .stats{}
+body.search-page #globalImportBtn{display:none!important}
+.category-collapse{margin:14px 0;border:1px solid #dbe3ef;border-radius:14px;background:#fff;overflow:hidden}.category-collapse>summary{list-style:none}.category-collapse>summary::-webkit-details-marker{display:none}.category-collapse>summary::-webkit-details-marker{display:none}.category-collapse-title{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:16px 18px;font-weight:800;font-size:18px;background:#f7f9fc}.category-collapse-title:after{content:'＋';font-size:22px}.category-collapse[open]>.category-collapse-title:after{content:'−'}.category-count{font-size:13px;font-weight:600;color:#64748b;margin-left:auto;margin-right:12px}.category-collapse-body{padding:0 12px 12px}.category-collapse-body>.property{margin-top:12px}
+.agent-db-box{margin:18px 0;padding:18px;border:1px solid #dbe3ef;border-radius:14px;background:#f8fafc}.agent-db-box h2{margin:0 0 6px}.agent-form{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.agent-form .full{grid-column:1/-1}.agent-form input,.agent-form select,.agent-form textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box}.agent-record{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-top:9px}.agent-record-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.agent-tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#e0f2fe;font-size:12px;font-weight:700}.owner-box{margin:10px 0;padding:10px;border-radius:9px;background:#f8fafc;border:1px dashed #cbd5e1}.owner-box input{padding:8px;border:1px solid #cbd5e1;border-radius:7px;width:min(360px,100%)}
+.lease-reminder-box{margin:16px 0;padding:16px;border:1px solid #fde68a;border-radius:14px;background:#fffbeb}.lease-reminder-title{font-size:19px;font-weight:800;margin-bottom:10px}.lease-reminder-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.lease-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:700}.lease-pill.urgent{background:#fed7aa;color:#9a3412}.lease-pill.expired{background:#fecaca;color:#991b1b}.lease-list{display:grid;gap:8px}.lease-item{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:10px;background:#fff;border-left:5px solid #94a3b8}.lease-item.urgent{border-left-color:#f97316}.lease-item.expired{border-left-color:#dc2626}.lease-item.warning{border-left-color:#f59e0b}.lease-item.notice{border-left-color:#eab308}.lease-meta{font-size:12px;color:#64748b;margin-top:3px}.lease-date{text-align:right;font-size:13px}.lease-date span{font-weight:800}.lease-empty{padding:12px;background:#fff;border-radius:9px}.lease-note{font-size:12px;color:#64748b;margin-top:10px}@media(max-width:600px){.lease-item{display:block}.lease-date{text-align:left;margin-top:7px}}
+/* V14 STORY FINAL */
+.story-player-wrap{position:relative;max-width:420px;margin:0 auto;background:#000;border-radius:16px;overflow:hidden}
+.story-player{width:100%;aspect-ratio:9/16;display:block;background:#000;object-fit:cover}
+.story-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:68px;border:0;border-radius:12px;background:#0008;color:#fff;font-size:38px;line-height:1;cursor:pointer}
+.story-arrow.left{left:10px}.story-arrow.right{right:10px}
+.story-progress{display:flex;gap:4px;position:absolute;left:10px;right:10px;top:8px;z-index:6}
+.story-progress i{height:3px;flex:1;background:#ffffff66;border-radius:9px;overflow:hidden}.story-progress i.active{background:#fff}
+.story-select{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:12px 0}.story-select button{min-width:34px;height:34px;border-radius:50%;border:1px solid #cbd5e1;background:#fff;color:#111827;font-weight:800;cursor:pointer}.story-select button.active{background:#111827;color:#fff}
+.story-caption{text-align:center;font-weight:800;margin:8px 0 14px}.story-hint{text-align:center;color:#64748b;font-size:12px;margin-bottom:8px}
+/* REALTOR PROFILE COVER */
+.realtor-cover{position:relative;overflow:hidden;border-radius:50%;margin:0;background:#111827;box-shadow:0 8px 22px rgba(15,23,42,.12);width:170px;min-width:170px;height:170px}.realtor-cover img{display:block;width:100%;height:100%;object-fit:cover}.realtor-cover-placeholder{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;text-align:center;padding:12px;background:linear-gradient(135deg,#111827,#475569)}.realtor-cover-info{display:none}#customerProfileCover{flex:0 0 170px}.realtor-profile-info{flex:1;min-width:0;background:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 8px 22px rgba(15,23,42,.08);border:1px solid #e5e7eb}.realtor-profile-info h3{margin:0 0 4px;font-size:24px}.realtor-profile-info .profile-role{font-weight:700;margin-bottom:12px}.realtor-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px}.realtor-profile-item{display:flex;flex-direction:column;gap:2px}.realtor-profile-item span{color:#475569}.realtor-profile-about{margin-top:12px;color:#475569;line-height:1.5}.realtor-whatsapp-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;padding:11px 18px;border-radius:10px;text-decoration:none;font-weight:800;background:#16a34a;color:#fff}.realtor-whatsapp-btn:hover{opacity:.92}#customerProfileCover,#customerProfileInfo{box-sizing:border-box}#customerProfileCover + #customerProfileInfo{margin-left:0}.realtor-profile-row{display:flex;gap:18px;align-items:stretch;margin-bottom:22px}
+.realtor-cover img{display:block;width:100%;height:280px;object-fit:cover}
+.realtor-cover-placeholder{height:280px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;background:linear-gradient(135deg,#111827,#475569)}
+.realtor-cover-info{position:absolute;left:0;right:0;bottom:0;padding:55px 24px 20px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+.realtor-cover-info h2{margin:0 0 4px;font-size:29px}.realtor-cover-info div{font-size:14px;opacity:.94}
+.profile-cover-admin{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;margin-top:10px}
+.realtor-profile-info{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;margin:-8px 0 22px;box-shadow:0 6px 20px rgba(15,23,42,.07)}.realtor-profile-info h3{margin:0 0 8px;font-size:21px}.realtor-profile-info .profile-role{color:#475569;font-weight:700;margin-bottom:12px}.realtor-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.realtor-profile-item{background:#f8fafc;border-radius:10px;padding:10px 12px}.realtor-profile-item b{display:block;font-size:12px;color:#64748b;margin-bottom:3px}.realtor-profile-item span{font-weight:700;color:#0f172a}.realtor-profile-about{margin-top:12px;line-height:1.55;color:#334155}.realtor-profile-admin-fields{margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0}
+@media(max-width:600px){.realtor-profile-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.realtor-profile-row{flex-direction:row;gap:12px}.realtor-cover{width:120px;min-width:120px;height:120px}.realtor-profile-info{padding:14px}.realtor-profile-info h3{font-size:20px}.realtor-profile-grid{grid-template-columns:1fr}.realtor-profile-about{display:none}.realtor-whatsapp-btn{width:100%;box-sizing:border-box;margin-top:12px}}
+.tenancy-file-archive{margin-top:10px;padding:12px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc}.tenancy-file-name{margin-top:5px;color:#475569;font-size:13px;word-break:break-word}.tenancy-file-archive .actions{margin-top:8px}
+.change-password-box{width:min(430px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto}.change-password-box input{width:100%;box-sizing:border-box;min-height:46px;padding:11px 12px;font-size:16px;border:1px solid #cbd5e1;border-radius:10px;margin:0}.change-password-box .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}.change-password-box .actions .btn{min-height:44px;flex:1 1 150px}@media(max-width:600px){.change-password-box{width:calc(100vw - 24px);padding:18px}.change-password-box h2{font-size:20px}.change-password-box .actions{flex-direction:column}.change-password-box .actions .btn{width:100%;flex:none}}
+.owner-private-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.owner-private-title span{font-size:11px;color:#64748b}.owner-edit-grid{margin-top:8px}.owner-private-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.owner-private-grid>div{padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px}.owner-private-grid .full{grid-column:1/-1}.owner-private-grid b{display:block;font-size:11px;color:#64748b;margin-bottom:4px}.owner-private-grid div div{white-space:pre-wrap;word-break:break-word}@media(max-width:600px){.owner-private-grid{grid-template-columns:1fr}.owner-private-grid .full{grid-column:auto}.owner-private-title{align-items:flex-start;flex-direction:column}}
+.owner-locked-note{padding:10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;color:#475569;margin:8px 0}.photo-manager-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:15px}.photo-manager-item{border:1px solid #e2e8f0;border-radius:12px;padding:8px;background:#fff}.photo-manager-item img{width:100%;height:140px;object-fit:cover;border-radius:8px;display:block;margin-bottom:8px}.photo-manager-item .btn{width:100%}
+#customerLiveUpdates,#adminUpdateList{display:none!important}
+/* iPhone / iPad tap reliability */
+button,.btn,a,input,select,textarea{touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,.08)}
+button,.btn{position:relative;z-index:3;cursor:pointer;-webkit-appearance:none;appearance:none}
+.modal.show,.auth-overlay{pointer-events:auto}
+.modal.show .modalbox,.auth-overlay .auth-box{pointer-events:auto;position:relative;z-index:200001}
+.owner-box{position:relative;z-index:10}.owner-actions{position:relative;z-index:20}.owner-actions button{position:relative;z-index:21;pointer-events:auto!important;min-height:48px;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+/* V62 ADMIN VIEW POLISH */
+#adminBar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding:12px 14px;margin:-8px -8px 18px;background:linear-gradient(135deg,#111 0%,#1c1c1c 55%,#2b2414 100%);border:1px solid rgba(212,175,55,.35);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.16)}
+#adminBar .admin-badge{margin-right:auto;order:-1;padding:8px 12px;border-radius:999px;background:linear-gradient(135deg,#d4af37,#f5d77a);color:#17120a;font-weight:900;font-size:12px;letter-spacing:.5px;box-shadow:0 3px 10px rgba(212,175,55,.22)}
+#adminBar .btn{font-size:12px;min-height:38px;padding:9px 12px;border-radius:10px;white-space:nowrap}
+#adminWorkspace{max-width:1500px;margin:0 auto}
+#adminWorkspace>.dashboard,#adminWorkspace>.upload-box,#adminWorkspace>.section,#adminWorkspace>.stats{margin-bottom:16px}
+#adminSearchPage{border:1px solid #eadfbe;background:linear-gradient(180deg,#fffdf8,#fff);box-shadow:0 8px 24px rgba(33,24,7,.06)}
+#adminSearchPage h2,#categoryUploadPanel h2{font-size:20px;letter-spacing:-.2px;margin-top:0}
+#quickToolsPanel{background:linear-gradient(135deg,#fffdf8,#fff7df);border:1px solid #ead7a2}
+#quickToolsPanel .actions{display:flex;flex-wrap:wrap;gap:9px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.stats .stat{background:#fff;border:1px solid #e8e0d0;border-radius:14px;padding:14px 12px;text-align:center;box-shadow:0 5px 16px rgba(0,0,0,.045)}
+.stats .stat b{display:block;font-size:24px;line-height:1.1;color:#8b6a17;margin-bottom:5px}
+.stats .stat{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+#categoryUploadPanel{background:#fff;border:1px solid #e6dfd1;border-radius:16px;padding:18px;box-shadow:0 7px 22px rgba(0,0,0,.045)}
+#categoryUploadPanel>div:first-of-type{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px!important}
+#categoryUploadPanel>div:first-of-type>div{background:#faf9f5;border:1px solid #ebe5d9;border-radius:13px;padding:14px;transition:.18s ease}
+#categoryUploadPanel>div:first-of-type>div:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,0,0,.06)}
+#categoryUploadPanel .btn{width:100%;font-size:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;padding:6px;background:#f5f3ee;border:1px solid #e6e0d4;border-radius:13px;margin:4px 0 14px}
+.tabs .tab{flex:1;min-width:120px;border:0!important;border-radius:9px!important;font-size:12px!important;font-weight:800;padding:10px 12px!important;background:transparent!important;color:#64748b}
+.tabs .tab.active{background:#171717!important;color:#f7d774!important;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.section{background:#fff;border:1px solid #e8e2d7;border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.04)}
+.section>.search{margin:0 0 10px;border-radius:10px}
+.section .states{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.statebtn{font-size:11px!important;padding:7px 10px!important;border-radius:999px!important}
+.upload-box{background:#fff;border:1px solid #e8e2d7;border-radius:16px;padding:17px;box-shadow:0 6px 20px rgba(0,0,0,.04)}
+.log{max-height:180px;overflow:auto;background:#111827;color:#d1fae5;border-radius:10px;padding:12px;font-size:11px;line-height:1.55}
+#siteMediaPanel,#crmLeasePanelTop,#crmAgentPanelTop,#crmLeadPanelTop,#crmCommissionPanelTop,#propertyProfilePanel{border-radius:16px;border:1px solid #e8e0d0;box-shadow:0 10px 28px rgba(0,0,0,.07)}
+@media(max-width:900px){#adminBar .admin-badge{width:100%;margin:0 0 2px;order:-2;text-align:center}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}#categoryUploadPanel>div:first-of-type{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){#adminBar{position:relative;margin:0 0 12px;padding:10px;gap:7px}#adminBar .btn{flex:1 1 calc(50% - 7px);font-size:11px;min-height:36px;padding:8px 7px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stats .stat{padding:11px 8px}.stats .stat b{font-size:20px}#categoryUploadPanel>div:first-of-type{grid-template-columns:1fr}.tabs .tab{min-width:calc(50% - 4px);flex:none}.section,.upload-box,#adminSearchPage{padding:13px}}
+.secure-auth-email{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;margin:8px 0 14px;font-size:16px}
+.secure-auth-badge{font-size:12px;color:#166534;background:#ecfdf3;border:1px solid #bbf7d0;border-radius:999px;padding:5px 9px;display:inline-block;margin-bottom:10px}
+.admin-listing-groups{border:1px solid #e8e2d7}.admin-listing-group{background:#fff;border:1px solid #e6e0d4;border-radius:13px;margin:8px 0;overflow:hidden}.admin-listing-group summary{list-style:none;cursor:pointer;padding:15px 16px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#faf9f6}.admin-listing-group summary::-webkit-details-marker{display:none}.admin-listing-group summary:after{content:'＋';font-size:18px;color:#8a6a00}.admin-listing-group[open] summary:after{content:'−'}.admin-listing-group-body{padding:12px;background:#f8f8f6}.admin-listing-group-body .property{margin-bottom:10px}.admin-listing-group-body .property:last-child{margin-bottom:0}.admin-listing-group-count{font-size:12px;color:#667085;font-weight:600}
+<style id="evelyn-broker-mobile-input-fix">
+@media (max-width: 700px){input,select,textarea,button{font-size:16px!important}.formfield input,.formfield select,.formfield textarea{min-height:44px}.actions .btn{min-height:44px}}
+</style>
+<style id="evelyn-profile-layout-fix">
+.realtor-profile-row{display:flex;align-items:center;gap:16px;margin:0 0 20px;padding:14px;background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 6px 18px rgba(15,23,42,.07)}
+#customerProfileCover{flex:0 0 210px!important;width:210px!important;height:210px!important;margin:0!important;border-radius:50%!important;overflow:hidden}
+#customerProfileCover img{width:100%!important;height:100%!important;object-fit:cover!important}
+#customerProfileCover .realtor-cover-placeholder{height:100%!important;font-size:13px!important;padding:8px!important}
+#customerProfileCover .realtor-cover-info{display:none!important}
+#customerProfileInfo{flex:1!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+#customerProfileInfo h3{font-size:18px;margin:0 0 2px}
+#customerProfileInfo .profile-role{font-size:11px;margin-bottom:6px}
+#customerProfileInfo .realtor-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}
+#customerProfileInfo .realtor-profile-item{font-size:11px}
+#customerProfileInfo .realtor-profile-item b{font-size:10px}
+#customerProfileInfo .realtor-profile-item span{color:#64748b}
+#customerProfileInfo .realtor-profile-about{display:none}
+#customerProfileInfo .realtor-whatsapp-btn{margin-top:7px;padding:7px 12px;border-radius:8px;font-size:12px}
+@media(max-width:600px){.realtor-profile-row{gap:12px;padding:11px}#customerProfileCover{flex-basis:210px!important;width:210px!important;height:210px!important;border-radius:50%!important}#customerProfileInfo h3{font-size:16px}#customerProfileInfo .realtor-profile-grid{grid-template-columns:1fr;gap:3px}#customerProfileInfo .realtor-profile-item:nth-child(n+3){display:none}#customerProfileInfo .realtor-whatsapp-btn{padding:6px 10px;font-size:11px}}
+</style>
+<style id="evelyn-admin-media-beauty">
+.admin-content-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}.admin-media-card{position:relative;background:linear-gradient(180deg,#fff,#f8fafc);border:1px solid #e2e8f0;border-radius:20px;padding:20px;box-shadow:0 10px 28px rgba(15,23,42,.07);overflow:hidden}.admin-media-card:before{content:'';position:absolute;left:0;top:0;right:0;height:5px;background:linear-gradient(90deg,#ef4444,#f59e0b)}.admin-media-card:nth-child(2):before{background:linear-gradient(90deg,#7c3aed,#2563eb)}.admin-media-card h3{margin:0 0 7px;font-size:20px}.admin-media-card input[type=text],.admin-media-card textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;background:#fff;font:inherit}.admin-media-card textarea{min-height:105px;resize:vertical}.admin-media-card input[type=file]{display:block;width:100%;padding:12px;border:1px dashed #94a3b8;border-radius:12px;background:#f8fafc}.admin-update-row{display:grid;grid-template-columns:1fr 1.5fr auto;gap:10px;align-items:start;margin-top:14px}.admin-update-row .btn{min-height:45px}.admin-upload-section{margin-top:14px;padding:14px;border-radius:15px;background:#fff;border:1px solid #e2e8f0}.admin-upload-label{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;font-weight:800}.admin-upload-help{font-size:12px;color:#64748b;margin-top:6px;line-height:1.45}.upload-preview-card{margin-top:10px;min-height:72px;padding:10px;border-radius:12px;background:#f8fafc;border:1px dashed #cbd5e1}.site-admin-list{display:grid;gap:9px;margin-top:14px;max-height:330px;overflow:auto;padding-right:2px}.site-admin-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 13px;border-radius:13px;background:#fff;border:1px solid #e2e8f0}.site-admin-item b{font-size:13px}.site-admin-item .btn{padding:8px 11px;font-size:12px}.admin-media-card .btn{border-radius:10px}.profile-cover-admin{background:linear-gradient(135deg,#f8fafc,#fff);border:1px solid #dbe3ef;border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.profile-admin-preview{display:flex;align-items:center;gap:16px;margin-top:14px;padding:14px;border-radius:16px;background:#fff;border:1px solid #e2e8f0}.profile-admin-preview img,.profile-admin-avatar-placeholder{width:132px;height:132px;min-width:132px;border-radius:50%;object-fit:cover;border:5px solid #fff;box-shadow:0 8px 24px rgba(15,23,42,.14);background:linear-gradient(135deg,#111827,#64748b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}.profile-admin-preview-text{min-width:0}.profile-admin-preview-text b{display:block;font-size:19px}.profile-admin-preview-text span{display:block;color:#64748b;margin-top:4px}.property-profile-upload-note{font-size:12px;color:#64748b;margin-top:6px}
+#customerProfileCover{flex-basis:135px!important;width:135px!important;height:135px!important;border:4px solid #fff!important;box-shadow:0 8px 24px rgba(15,23,42,.16)!important;background:#111827!important}
+#customerProfileInfo h3{font-size:23px!important}
+@media(max-width:850px){.admin-content-grid{grid-template-columns:1fr}.admin-update-row{grid-template-columns:1fr}.profile-admin-preview img,.profile-admin-avatar-placeholder{width:110px;height:110px;min-width:110px}}
+@media(max-width:600px){#customerProfileCover{flex-basis:102px!important;width:102px!important;height:102px!important}.profile-admin-preview{align-items:flex-start}.profile-admin-preview img,.profile-admin-avatar-placeholder{width:96px;height:96px;min-width:96px}.admin-media-card{padding:16px}}
+</style>
+<style id="v51-iphone-ui-fix">
+/* V51 iPhone/Safari tap reliability: hidden overlays never block taps. */
+.modal:not(.show), .auth-overlay[style*="display:none"], .auth-overlay:not(.show) { pointer-events:none !important; visibility:hidden; }
+.modal.show, .modal.show .modalbox, .auth-overlay.show, .auth-overlay.show .auth-box { pointer-events:auto !important; visibility:visible !important; }
+button, .btn, .tab, .statebtn, a.drive, [role="button"] { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.auth-overlay#authOverlay.show { pointer-events:auto !important; visibility:visible !important; }
+</style>
+<style id="v61-ui-fix">
+/* V61: larger circular profile cover + smaller UI text */
+.realtor-cover,#customerProfileCover{width:210px!important;min-width:210px!important;height:210px!important;flex-basis:210px!important}
+.realtor-cover img{width:100%!important;height:100%!important;object-fit:cover!important}
+.profile-admin-preview img,.profile-admin-avatar-placeholder{width:150px!important;height:150px!important;min-width:150px!important}
+.btn,.tab,.statebtn{font-size:13px!important;padding:9px 13px!important}
+.topbar .btn{font-size:12px!important;padding:8px 11px!important}
+.property-title{font-size:17px!important}.category-collapse-title{font-size:16px!important}.formfield label{font-size:11px!important}
+@media(max-width:600px){.realtor-cover,#customerProfileCover{width:140px!important;min-width:140px!important;height:140px!important;flex-basis:140px!important}.realtor-cover img{height:140px!important}.profile-admin-preview img,.profile-admin-avatar-placeholder{width:120px!important;height:120px!important;min-width:120px!important}.realtor-profile-row{gap:12px!important}.topbar{gap:6px!important}.topbar .btn{font-size:11px!important;padding:8px 9px!important}.btn{font-size:12px!important;padding:9px 11px!important}}
+/* Keep visible controls above decorative layers */
+button,.btn,.tab,.statebtn,label.btn{pointer-events:auto!important;position:relative!important;z-index:20!important}
+</style>
+<style id="v63-native-button-style">
+#clearAllBtn,#downloadCRMSetupBtn{position:relative!important;z-index:99999!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important;}
+#downloadCRMSetupBtn{text-decoration:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;}
+.password-wrap{position:relative;width:100%;margin:0 0 2px}.password-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent!important;color:inherit!important;min-width:44px;width:44px;height:44px;padding:0;margin:0;box-shadow:none!important;font-size:19px;z-index:2;cursor:pointer;touch-action:manipulation}.text-link-btn{border:0;background:transparent;color:#a87900;text-decoration:underline;font-weight:700;padding:5px 2px;cursor:pointer;touch-action:manipulation}.text-link-btn:hover{color:#d49b16}.secure-auth-email{width:100%;box-sizing:border-box}
+</style>
+<style id="lead-independent-layout-v116">.lead-independent-sections{display:flex;flex-direction:column;gap:18px;margin-top:14px}.lead-independent-section{background:#fff;border:1px solid #e8e0d0;border-radius:18px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.05)}.lead-section-head{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 12px;border-bottom:1px solid #eee6d8;margin-bottom:12px}.lead-section-head h3{margin:0;font-size:18px}.lead-section-head span{font-size:12px;color:#777}.lead-section-visible,.lead-more-list{display:flex;flex-direction:column;gap:12px}.lead-record-card{margin:0!important}.lead-more-details{margin-top:12px;border-top:1px dashed #d9cfbe;padding-top:10px}.lead-more-details summary{cursor:pointer;font-weight:700;padding:8px 4px;color:#8a651f;list-style:none}.lead-more-details summary::-webkit-details-marker{display:none}.lead-more-details summary:before{content:'＋';display:inline-block;margin-right:7px}.lead-more-details[open] summary:before{content:'−'}@media(max-width:700px){.lead-independent-section{padding:10px}.lead-section-head h3{font-size:16px}}</style>
+<style>
+/* ========== PHASE 1‑11 新增修复样式 ========== */
+.lead‑full‑save‑btn{touch‑action:manipulation;‑webkit‑tap‑highlight‑color:transparent;pointer‑events:auto;z‑index:20;}
+.open‑lead‑modal‑btn{touch‑action:manipulation;‑webkit‑tap‑highlight‑color:transparent;pointer‑events:auto;z‑index:20;}
+.appointment‑item{border:1px solid #e2e8f0;border‑radius:12px;padding:12px;background:#fff;margin‑bottom:10px;}
+.appointment‑filter‑bar{display:flex;gap:8px;flex‑wrap:wrap;margin‑bottom:12px;}
+.cobroke-request-card{margin:14px 0;border:1px solid #ead7a2;background:linear-gradient(135deg,#fffdf7,#fff8e5);border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.06)}
+.cobroke-request-card h3{margin:0 0 5px}.cobroke-request-note{font-size:13px;color:#64748b;margin-bottom:12px}.cobroke-public-btn{background:#111827;color:#fff!important;border-color:#111827!important}
+.cobroke-request-item{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin:10px 0;background:#fff}.cobroke-request-item b{color:#111827}.cobroke-status{display:inline-block;padding:3px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:11px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="header"><h1>Evelyn Property Hub</h1><div>Property Listing Management System</div></div>
+<div class="auth-overlay" id="changePasswordOverlay" style="display:none"><div class="auth-box change-password-box"><h2>🔑 Change Admin Password</h2><p class="auth-note">Works on desktop web, iPhone/iPad Safari, and Android Chrome.</p><label style="display:block;text-align:left;font-weight:700;margin:10px 0 6px">Current password</label><div class="password-wrap"><input id="changeCurrentPassword" autocomplete="current-password" type="password" placeholder="Current password" autocomplete="current-password" inputmode="text"><button type="button" class="password-eye" onclick="togglePasswordField('changeCurrentPassword',this)" aria-label="Show password">👁️</button></div><label style="display:block;text-align:left;font-weight:700;margin:10px 0 6px">New password</label><div class="password-wrap"><input id="changeNewPassword" autocomplete="new-password" type="password" placeholder="Minimum 8 characters" autocomplete="new-password" inputmode="text"><button type="button" class="password-eye" onclick="togglePasswordField('changeNewPassword',this)" aria-label="Show password">👁️</button></div><label style="display:block;text-align:left;font-weight:700;margin:10px 0 6px">Confirm new password</label><div class="password-wrap"><input id="changeConfirmPassword" autocomplete="new-password" type="password" placeholder="Re‑enter new password" autocomplete="new-password" inputmode="text"><button type="button" class="password-eye" onclick="togglePasswordField('changeConfirmPassword',this)" aria-label="Show password">👁️</button></div><div class="actions"><button type="button" class="btn" onclick="submitChangeAdminPassword()">Save New Password</button><button type="button" class="btn light" onclick="closeChangeAdminPassword()">Cancel</button></div><div id="changePasswordMsg" class="auth-note" aria‑live="polite"></div></div></div>
+<div class="auth-overlay" id="forgotPasswordOverlay" style="display:none"><div class="auth-box"><span class="secure-auth-badge">🛡️ Email OTP</span><h2>Forgot Admin Password</h2><p id="forgotIntro" class="auth‑note">A 6‑digit password‑recovery code will ONLY be sent when you use Forgot Password. It will be sent to your Admin email.</p><label style="display:block;text-align:left;font‑weight:700;margin:10px 0 6px">Admin email</label><input id="forgotEmail" class="secure‑auth‑email" type="email" placeholder="Admin email" autocomplete="username" inputmode="email"><div id="forgotStep1"><div class="actions"><button type="button" class="btn" id="sendOtpBtn" onclick="sendAdminOtp()">📧 Send 6‑Digit OTP</button><button type="button" class="btn light" onclick="closeForgotPassword()">Cancel</button></div></div><div id="forgotStep2" style="display:none"><label style="display:block;text‑align:left;font‑weight:700;margin:12px 0 6px">6‑Digit OTP</label><input id="forgotOtp" class="secure‑auth‑email" type="text" maxlength="6" pattern="[0‑9]{6}" placeholder="Enter 6‑digit code" inputmode="numeric" autocomplete="one‑time‑code"><div class="actions"><button type="button" class="btn" onclick="verifyAdminOtpAndReset()">✅ Verify OTP</button><button type="button" class="btn light" id="resendOtpBtn" onclick="sendAdminOtp(true)">↻ Resend OTP</button></div><label style="display:block;text‑align:left;font‑weight:700;margin:10px 0 6px">New password</label><div class="password‑wrap"><input id="forgotNewPassword" autocomplete="new‑password" type="password" placeholder="Minimum 8 characters" autocomplete="new‑password"><button type="button" class="password‑eye" onclick="togglePasswordField('forgotNewPassword',this)" aria‑label="Show password">👁️</button></div><label style="display:block;text‑align:left;font‑weight:700;margin:10px 0 6px">Confirm new password</label><div class="password‑wrap"><input id="forgotConfirmPassword" autocomplete="new‑password" type="password" placeholder="Re‑enter new password" autocomplete="new‑password"><button type="button" class="password‑eye" onclick="togglePasswordField('forgotConfirmPassword',this)" aria‑label="Show password">👁️</button></div><div id="forgotCountdown" class="auth‑note"></div></div><div id="forgotMsg" class="auth‑note" aria‑live="polite"></div></div></div>
+<div class="auth‑overlay" id="authOverlay" style="display:none"><div class="auth‑box"><form id="adminLoginForm" method="post" action="#" autocomplete="on" novalidate onsubmit="event.preventDefault();submitAdminLogin();"><span class="secure‑auth‑badge">🔐 Supabase Secure Admin</span><h2>Admin Login</h2><p id="authIntro">Sign in with your Admin email and password. After a successful login, Safari/iPhone may offer to save this login securely. OTP is only used for Forgot Password.</p><input id="adminEmail" name="username" autocomplete="section‑admin username" class="secure‑auth‑email" type="email" placeholder="Admin email" inputmode="email" autocapitalize="none" spellcheck="false"><div class="password‑wrap"><input id="adminPassword" name="password" autocomplete="section‑admin current‑password" type="password" placeholder="Admin password"><button type="button" class="password‑eye" onclick="togglePasswordField('adminPassword',this)" aria‑label="Show password">👁️</button></div><div id="forgotLinkWrap" style="text‑align:right;margin‑top:7px"><button type="button" class="text‑link‑btn" onclick="openForgotPassword()">Forgot Password?</button></div><div class="actions"><button type="submit" class="btn">🔐 Sign In</button><button type="button" class="btn light" onclick="closeAdminLogin()">Cancel</button></div><div id="authMsg" class="auth‑note"></div></form></div></div>
+<div class="container">
+<div id="syncStatus" style="background:#eff6ff;color:#1e40af;padding:12px 14px;border‑radius:10px;margin‑bottom:15px">☁️ Supabase: connecting...</div>
+<div class="topbar" id="customerBar"><button class="btn light" onclick="openAdminLogin()">🔐 Admin Login</button></div>
+<div class="topbar" id="adminBar" style="display:none"><button type="button" class="btn" onclick="showPropertyProfilePanel()">👩 Property Profile</button><span class="admin‑badge">🔐 ADMIN MODE</span><button class="btn" onclick="showCustomerView()">👤 Customer View</button><button class="btn light" onclick="showLeads()">📩 Customer Leads <span id="leadBadge"></span></button><button type="button" class="btn" onclick="showLeaseReminderPanel()">📅 Lease Reminder</button><button type="button" class="btn" onclick="showViewingReminderPanel()">👀 Viewing Reminder <span id="viewingReminderBadge"></span></button><button type="button" class="btn" onclick="showAgentDatabase()">🤝 Agent Database</button><button type="button" class="btn" onclick="showSiteMediaPanel()">🎬 Video Story</button><button type="button" class="btn" onclick="showCommissionPanel()">💰 Commission</button><button type="button" class="btn" onclick="showVisitorAnalytics()">📊 Website Visitors</button>
+<label id="globalImportBtn" class="btn">📊 Import Excel<input id="allFiles" type="file" accept=".xlsx,.xls" multiple hidden></label>
+<button class="btn light" onclick="setWhatsAppBackend()">⚙️ WhatsApp API</button><button class="btn light" onclick="testSupabase()">🔌 Test Supabase</button><button type="button" id="crmCloudSetupBtn" class="btn light" onclick="try{setupCRMCloudInfo()}catch(e){alert('CRM Cloud Setup error: '+(e.message||e))};return false;">☁️ CRM Cloud Setup</button><button type="button" id="downloadCRMSetupBtn" class="btn light native‑download‑crm" onclick="try{downloadCRMSetup()}catch(e){alert('Download CRM Setup error: '+(e.message||e))};return false;">⬇️ Download CRM Setup</button><button type="button" id="reloadSupabaseBtn" class="btn light" onclick="return window.__reloadSupabaseSafe ? window.__reloadSupabaseSafe(event) : false;">☁️ Reload Supabase</button><button class="btn" onclick="exportExcel()">📥 Export Excel</button>
+<button class="btn" onclick="backup()">💾 Backup</button>
+<label class="btn light">♻️ Restore<input id="restoreFile" type="file" accept=".json" hidden></label>
+<button type="button" id="clearAllBtn" class="btn danger native‑delete‑crm" onclick="return window.__crmNativeDelete ? window.__crmNativeDelete(event) : false;">🗑️ Clear All</button><button class="btn light" onclick="changeAdminPassword()">🔑 Change Password</button><button class="btn" onclick="logoutAdmin()">🚪 Logout</button>
+</div>
+<div id="customerView" class="dashboard" style="display:none"><div class="realtor‑profile‑row"><div id="customerProfileCover" class="realtor‑cover"></div><div id="customerProfileInfo" class="realtor‑profile‑info"></div></div><div id="customerLiveUpdates" style="margin:0 0 18px"></div><div id="customerAIVideos" style="margin:0 0 18px"></div><div class="customer‑hero"><h2>👤 Find Your Property</h2><p>Search available properties or tell Evelyn what you are looking for.</p><button class="btn" onclick="openRequirementForm()">📝 Buyer / Tenant — Enquiry About This Requirement</button></div><h2>🔎 Customer Property Search</h2><p>Search available properties and send your requirements to Evelyn.</p><div class="formgrid" style="margin:12px 0"><div class="formfield"><label>Property Type</label><select id="customerTypeFilter" onchange="renderCustomerProperties()"><option value="">All Property Types</option><option value="land">Land</option><option value="commercial">Commercial</option><option value="factory">Factory</option><option value="house">House</option></select></div><div class="formfield"><label>State / 地区</label><select id="customerStateFilter" onchange="renderCustomerProperties()"><option value="">All States</option></select></div><div class="formfield full"><label>Search</label><input id="customerSearch" class="search" placeholder="Search property / location / state / size / price..." oninput="renderCustomerProperties()"></div></div><div id="customerResults"></div><hr><h2 id="leadFormSection">📝 Buyer / Tenant — Enquiry About This Requirement</h2><form id="leadForm" onsubmit="submitLead(event)"><input type="hidden" id="leadRef"><div class="formgrid"><div class="formfield"><label>Name *</label><input id="leadName" required></div><div class="formfield"><label>WhatsApp / Phone *</label><input id="leadPhone" required></div><div class="formfield"><label>Customer Nationality / Race</label><select id="leadNationality"><option value="">Select</option><option>Chinese</option><option>Indian</option><option>Malay</option><option>Sabahan</option><option>Sarawakian</option><option>Foreigner</option></select></div><div class="formfield"><label>Customer Relationship</label><select id="leadCRMRelationship" onchange="renderLeadCRM()"><option value="">All</option><option value="New Lead">🆕 New Lead</option><option value="Existing Buyer">🏠 Existing Buyer</option><option value="Existing Tenant">🏢 Existing Tenant</option><option value="Existing Buyer & Tenant">🔄 Existing Buyer & Tenant</option></select></div><div class="formfield"><label>Enquiry Type</label><select id="leadMode" onchange="updateLeadEnquiryTitle()"><option value="Buy">🟢 Buyer</option><option value="Rent">🔵 Tenant</option></select></div><div class="formfield"><label>Property Type</label><select id="leadType"><option>Land</option><option>Commercial</option><option>Factory</option><option>House</option><option>Other</option></select></div><div class="formfield"><label>Preferred State</label><input id="leadState"></div><div class="formfield"><label>Preferred Area / Location</label><input id="leadArea"></div><div class="formfield"><label>Budget</label><input id="leadBudget" placeholder="e.g. RM5,000,000"></div><div class="formfield"><label>Size Requirement</label><input id="leadSize" placeholder="e.g. 3‑5 acres / 50,000 sqft"></div><div class="formfield full"><label>Other Requirements</label><textarea id="leadNotes" placeholder="Power requirement, zoning, road frontage, bedrooms, etc."></textarea></div></div><div class="actions"><button class="btn" type="submit">📲 Submit & Send to Evelyn WhatsApp</button></div><div id="leadMsg" class="count"></div></form></div>
+<div id="adminWorkspace">
+<div class="dashboard" id="siteMediaPanel" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><div><h2 style="margin:0">🎬 Customer Video Story</h2><div class="auth‑note" style="margin:5px 0 0">后台发布中心 · Video Story 自动显示 24 小时</div></div><button type="button" class="btn light" onclick="closeSiteMediaPanel()">✖ Close</button></div><div class="admin‑content‑grid"><div class="admin‑media‑card" style="grid‑column:1/‑1"><h3>🎬 Video Story <span class="site‑update‑live">24H</span></h3><div class="auth‑note">一次可选择多个 Video；每一个 Video 会成为独立 Story，并按选择顺序排列。</div><div class="admin‑upload‑section"><div class="admin‑upload‑label"><span>✏️ Story Title</span></div><input id="videoTitle" type="text" placeholder="Video title / 房产视频标题"></div><div class="admin‑upload‑section"><div class="admin‑upload‑label"><span>🖼️ Story Cover</span><span class="auth‑note">可选</span></div><input id="videoCoverFile" type="file" accept="image/*" multiple><div id="videoCoverPreview" class="admin‑upload‑help">多个 Video 请按同样顺序选择 Cover；也可以不上传 Cover。</div></div><div class="admin‑upload‑section"><div class="admin‑upload‑label"><span>🎥 Video File</span><span class="auth‑note">不限制文件大小（受 Supabase Storage / 浏览器上传限制）</span></div><input id="videoFile" type="file" accept="video/*" multiple><div class="admin‑upload‑help">可一次上传多个 Video Story。</div><button type="button" class="btn" id="uploadVideoBtn" onclick="uploadAIVideo()" style="width:100%;margin‑top:10px">⬆️ Upload & Publish Story</button><div id="videoStatus" class="auth‑note"></div></div><div class="site‑admin‑list" id="adminVideoList"></div></div></div><div class="auth‑note" style="margin‑top:12px">Customer View：Video Story 会以独立 Story 播放；左右箭头切换，播放完成自动进入下一条。</div></div>
+<div class="dashboard" id="quickToolsPanel"><h2>⚡ Broker Command Center</h2><div id="brokerKpiGrid" style="display:grid;grid‑template‑columns:repeat(auto‑fit,minmax(150px,1fr));gap:10px;margin:12px 0"></div><div class="actions" style="margin:0;flex‑wrap:wrap"><button type="button" class="btn" onclick="showLeads()">📩 Customer Leads</button><button type="button" class="btn" onclick="showLeaseReminderPanel()">📅 Lease Reminder</button><button type="button" class="btn" onclick="showViewingReminderPanel()">👀 Viewing</button><button type="button" class="btn" onclick="showAgentDatabase()">🤝 Agent Database</button><button type="button" class="btn" onclick="showCommissionPanel()">💰 Commission</button></div><div class="admin‑note" style="margin‑top:12px;margin‑bottom:0">Daily focus: follow up hot buyers/tenants, today's viewings, expiring leases, active deals and outstanding commission.</div></div>
+<div id="crmLeasePanelTop" class="dashboard" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><h2 style="margin:0">📅 Lease Expiry Reminder</h2><button type="button" class="btn light" onclick="closeCRMTopPanels()">✖ Close</button></div><div id="leaseExpiryReminderTop"></div></div>
+<div id="crmViewingPanelTop" class="dashboard" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><h2 style="margin:0">👀 Viewing Appointment Reminder</h2><button type="button" class="btn light" onclick="closeCRMTopPanels()">✖ Close</button></div>
+<!-- Phase3 新增预约过滤器UI -->
+<div class="appointment‑filter‑bar">
+<button class="btn light" onclick="setAppointmentFilter('ALL')">ALL</button>
+<button class="btn light" onclick="setAppointmentFilter(1)">DAY 1</button>
+<button class="btn light" onclick="setAppointmentFilter(2)">DAY 2</button>
+<button class="btn light" onclick="setAppointmentFilter(3)">DAY 3</button>
+<button class="btn light" onclick="setAppointmentFilter(4)">DAY 4</button>
+<button class="btn" onclick="openNewAppointmentModal()">➕ New Viewing Appointment</button>
+</div>
+<div id="viewingAppointmentReminderTop"></div></div>
+<div id="crmAgentPanelTop" class="dashboard" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><h2 style="margin:0">🤝 Agent Interaction Database</h2><div class="actions"><button type="button" class="btn" onclick="openManualAgentForm()">➕ Add Agent Interaction</button><button type="button" class="btn light" onclick="closeCRMTopPanels()">✖ Close</button></div></div><div id="manualAgentFormTop"></div><div id="agentDatabaseTop"></div></div>
+<div id="crmLeadPanelTop" class="dashboard" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><div style="display:flex;align‑items:center;gap:10px;flex‑wrap:wrap"><h2 style="margin:0">📩 Customer Leads</h2><button type="button" id="addExistingCustomerBtn" class="btn existing‑customer‑add‑btn" style="position:relative!important;z‑index:9999!important;pointer‑events:auto!important;touch‑action:manipulation!important;min‑height:44px!important;" onclick="openManualExistingCustomer();return false;" ontouchend="event.preventDefault();openManualExistingCustomer();return false;">➕ Add Existing Customer</button></div><button type="button" class="btn light" onclick="closeCRMTopPanels()">✖ Close</button></div><div id="leadCRMTop"></div></div>
+<div id="crmCommissionPanelTop" class="dashboard" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><h2 style="margin:0">💰 Commission</h2><button type="button" class="btn light" onclick="closeCRMTopPanels()">✖ Close</button></div><div id="commissionCRMTop"></div></div>
+<div class="dashboard" id="adminSearchPage"><div class="admin‑note">🔐 Search only — use Property Type, State / 地区 and Search to find listings. WhatsApp enquiries are configured for +601153922261.</div><h2>🔎 Search All Properties</h2><div class="formgrid" style="margin:12px 0"><div class="formfield"><label>Property Type</label><select id="globalTypeFilter" onchange="globalSearch()"><option value="">All Property Types</option><option value="land">Land</option><option value="commercial">Commercial</option><option value="factory">Factory</option><option value="house">House</option></select></div><div class="formfield"><label>State / 地区</label><select id="globalStateFilter" onchange="globalSearch()"><option value="">All States</option></select></div><div class="formfield full"><label>Search</label><input id="globalSearch" class="search" placeholder="Reference / Name / State / Area / Price / any field..." oninput="globalSearch()"></div></div><div class="actions" style="margin:12px 0"><button type="button" class="btn" onclick="showAgentDatabase()">🤝 Agent Interaction Database</button><button type="button" class="btn danger" onclick="deleteUnknownListings()">🗑️ Delete Unknown Listings</button></div><div id="globalCount" class="count">Results: 0</div><div id="leaseExpiryReminder"></div>
+<div id="globalResults"></div></div>
+<div id="agentDatabase"></div>
+<div class="stats"><div class="stat"><b id="totalN">0</b>Total</div><div class="stat"><b id="landN">0</b>Land</div><div class="stat"><b id="commercialN">0</b>Commercial</div><div class="stat"><b id="factoryN">0</b>Factory</div><div class="stat"><b id="houseN">0</b>House</div></div>
+<div class="dashboard" id="propertyProfilePanel" style="display:none"><div class="actions" style="justify‑content:space‑between;align‑items:center"><div><h2 style="margin:0">👩 Property Profile</h2><div class="admin‑note" style="margin:5px 0 0">Customer View 顶部显示的 Evelyn Profile</div></div><button type="button" class="btn light" onclick="closePropertyProfilePanel()">✖ Close</button></div><div class="admin‑note">建议使用清晰、专业的个人照片。Customer View 会以较大的圆形头像显示在左侧。</div><div class="profile‑cover‑admin"><div class="admin‑upload‑label"><span>🖼️ Upload Profile Photo</span><span class="auth‑note">圆形显示</span></div><input id="propertyProfileCoverFile" type="file" accept="image/*"><div class="property‑profile‑upload‑note">推荐正方形照片，人物脸部尽量位于中央。</div><div id="propertyProfileCoverPreview" class="profile‑admin‑preview"></div><div class="actions"><button class="btn" type="button" onclick="savePropertyProfileCover()">💾 Save Profile Photo</button><button class="btn danger" type="button" onclick="removePropertyProfileCover()">🗑️ Delete Cover</button></div></div></div>
+<div class="upload‑box" id="categoryUploadPanel"><h2>📂 Upload Property Listings</h2><div style="display:grid;grid‑template‑columns:repeat(4,1fr);gap:12px"><div><b>🌳 Land</b><input type="file" id="quickLandFiles" accept=".xlsx,.xls" multiple style="width:100%;margin:8px 0"><button class="btn" onclick="quickImport('land')">Upload Land</button></div><div><b>🏢 Commercial</b><input type="file" id="quickCommercialFiles" accept=".xlsx,.xls" multiple style="width:100%;margin:8px 0"><button class="btn" onclick="quickImport('commercial')">Upload Commercial</button></div><div><b>🏭 Factory</b><input type="file" id="quickFactoryFiles" accept=".xlsx,.xls" multiple style="width:100%;margin:8px 0"><button class="btn" onclick="quickImport('factory')">Upload Factory</button></div><div><b>🏠 House</b><input type="file" id="quickHouseFiles" accept=".xlsx,.xls" multiple style="width:100%;margin:8px 0"><button class="btn" onclick="quickImport('house')">Upload House</button></div></div><div class="auth‑note">You can upload Land, Commercial, Factory and House independently. Each category Excel is treated as the master list: uploading it replaces that category in Supabase with every Excel row. This prevents 109 rows from being collapsed into 1 row.<br><strong>Phase7保护：Excel上传仅更新房源，不会修改、删除Owner数据库记录，Owner只能手动编辑保存变更。</strong></div><div class="auth‑note">📂 Photo Folder is kept as a Google Drive link. If the Excel cell itself contains a Google Drive hyperlink, the real hyperlink URL is imported automatically.</div></div>
+<div class="dashboard admin‑listing‑groups" id="adminListingGroups"><div class="actions" style="justify‑content:space‑between;align‑items:center"><div><h2 style="margin:0">📚 Listing Database</h2><div class="auth‑note" style="margin‑top:5px">Land · Commercial · Factory · House 分开收起来，点击分类即可展开。</div></div></div><div id="adminListingGroupBody"></div></div>
+<div class="tabs"><button class="tab active" data‑cat="land" onclick="showCategory('land')">🌳 LAND</button><button class="tab" data‑cat="commercial" onclick="showCategory('commercial')">🏢 COMMERCIAL</button><button class="tab" data‑cat="factory" onclick="showCategory('factory')">🏭 FACTORY</button><button class="tab" data‑cat="house" onclick="showCategory('house')">🏠 HOUSE</button></div>
+<div id="land" class="section active"><div class="upload‑box"><h2>🌳 Land</h2><input type="file" id="landFiles" accept=".xlsx,.xls" multiple><br><button class="btn" onclick="importCategory('land')">Import Land Excel</button></div><input class="search" id="landSearch" placeholder="Search Land — any field..." oninput="renderCategory('land')"><div id="landCount" class="count">Land: 0</div><div id="landStates" class="states"></div><div id="landResults"></div></div>
+<div id="commercial" class="section"><div class="upload‑box"><h2>🏢 Commercial</h2><input type="file" id="commercialFiles" accept=".xlsx,.xls" multiple><br><button class="btn" onclick="importCategory('commercial')">Import Commercial Excel</button></div><input class="search" id="commercialSearch" placeholder="Search Commercial — any field..." oninput="renderCategory('commercial')"><div id="commercialCount" class="count">Commercial: 0</div><div id="commercialStates" class="states"></div><div id="commercialResults"></div></div>
+<div id="factory" class="section"><div class="upload‑box"><h2>🏭 Factory</h2><input type="file" id="factoryFiles" accept=".xlsx,.xls" multiple><br><button class="btn" onclick="importCategory('factory')">Import Factory Excel</button></div><input class="search" id="factorySearch" placeholder="Search Factory — any field..." oninput="renderCategory('factory')"><div id="factoryCount" class="count">Factory: 0</div><div id="factoryStates" class="states"></div><div id="factoryResults"></div></div>
+<div id="house" class="section"><div class="upload‑box"><h2>🏠 House</h2><input type="file" id="houseFiles" accept=".xlsx,.xls" multiple><br><button class="btn" onclick="importCategory('house')">Import House Excel</button></div><input class="search" id="houseSearch" placeholder="Search House — any field..." oninput="renderCategory('house')"><div id="houseCount" class="count">House: 0</div><div id="houseStates" class="states"></div><div id="houseResults"></div></div>
+<div class="upload‑box"><h3>Import Log</h3><div id="log" class="log">Ready.</div></div>
+</div>
+<div id="modal" class="modal"><div id="modalbox" class="modalbox"></div></div>
+<!-- Phase2 新增：Lead弹窗容器已经复用全局#modal -->
+</div>
+<script>
+const memoryStore={};
+const KEY='EvelynPropertyHub_v6';
+let database={land:[],commercial:[],factory:[],house:[]};
+let stateFilter={land:'ALL',commercial:'ALL',factory:'ALL',house:'ALL'};
+let currentEdit=null;
+const aliases={state:['state','negeri','state / negeri'],ref:['reference number','reference no','ref no','ref','reference'],name:['name','property name']};
+
+// ========== Phase3 新增独立Viewing Appointment 全局状态 ==========
+let viewingAppointments = [];
+let activeAppointmentFilter = "ALL";
+
+function norm(x){return String(x??'').replace(/^\uFEFF/,'').replace(/\u00a0/g,' ').trim().toLowerCase().replace(/\s+/g,' ')}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function escAttr(v){return esc(v);}
+function field(p,names){return Object.keys(p).find(k=>names.includes(norm(k)))||''}
+function getState(p){let k=field(p,aliases.state);return k&&String(p[k]).trim()?String(p[k]).trim():'Other / Unknown'}
+function getRef(p){let k=field(p,aliases.ref);return k?p[k]:''}
+function getName(p){let k=field(p,aliases.name);return k&&String(p[k]).trim()?p[k]:'Property'}
+function compareReference(a,b){a=String(a??'').trim();b=String(b??'').trim();if(!a&&!b)return 0;if(!a)return 1;if(!b)return -1;let aa=a.match(/^(.*?)(\d+)$/),bb=b.match(/^(.*?)(\d+)$/);if(aa&&bb){let c=aa[1].localeCompare(bb[1],undefined,{numeric:true,sensitivity:'base'});if(c)return c;return Number(aa[2])-Number(bb[2])}return a.localeCompare(b,undefined,{numeric:true,sensitivity:'base'})}
+function sortListings(){Object.keys(database).forEach(c=>database[c].sort((a,b)=>compareReference(getRef(a),getRef(b))))}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(database))}catch(e){memoryStore[KEY]=JSON.stringify(database)}}
+function load(){try{let raw=localStorage.getItem(KEY)||memoryStore[KEY];let x=raw?JSON.parse(raw):null;if(x)database={...database,...x}}catch(e){}}load();sortListings();
+
+function showCategory(c){document.body.classList.remove('search-page');document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(c).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.cat===c));renderCategory(c)}
+function detectDelimiter(t){let lines=t.split(/\r?\n/).slice(0,5).filter(Boolean);let ds=[',',';','\t'];return ds.sort((a,b)=>lines.join('').split(b).length-lines.join('').split(a).length)[0]}
+function parseCSV(t){t=t.replace(/^\uFEFF/,'');let d=detectDelimiter(t),rows=[],r=[],v='',q=false;for(let i=0;i<t.length;i++){let c=t[i],n=t[i+1];if(c==='"&&q&&n==='"'){v+='"';i++}else if(c==='"')q=!q;else if(c===d&&!q){r.push(v);v=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&n==='\n')i++;r.push(v);if(r.some(x=>String(x).trim()))rows.push(r);r=[];v=''}else v+=c}if(v||r.length){r.push(v);if(r.some(x=>String(x).trim()))rows.push(r)}return rows}
+function rowsToObjects(rows){if(!rows.length)return[];let headers=rows[0].map((h,i)=>String(h).replace(/^\uFEFF/,'').trim()||'Column '+(i+1));return rows.slice(1).filter(r=>r.some(x=>String(x??'').trim())).map(r=>{let o={};headers.forEach((h,i)=>o[h]=r[i]??'');return o})}
+async function readFile(file){
+ const ext=file.name.toLowerCase().split('.').pop();
+ if(!['xlsx','xls'].includes(ext))throw new Error('Excel files only. Please upload .xlsx or .xls.');
+ if(!window.XLSX)throw new Error('Excel reader is not loaded. Please refresh the page.');
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array',raw:false});
+ let out=[];
+ wb.SheetNames.forEach(sn=>{
+   const ws=wb.Sheets[sn];
+   const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+   if(!matrix.length)return;
+   const headers=matrix[0].map((h,i)=>String(h??'').replace(/^\uFEFF/,'').trim()||'Column '+(i+1));
+   for(let r=1;r<matrix.length;r++){
+     const row=matrix[r]||[];
+     if(!row.some(x=>String(x??'').trim()))continue;
+     const obj={};
+     headers.forEach((h,i)=>{
+       let value=row[i]??'';
+       const cell=ws[XLSX.utils.encode_cell({r,c:i})];
+       if(HEADER_ALIASES.photo_folder.some(a=>a===headerKey(h)) && cell?.l?.Target){value=cell.l.Target;}
+       obj[h]=value;
+     });
+     out.push(obj);
+   }
+ });
+ return out;
+}
+function guessCategory(name){const n=norm(name);if(n.includes('land'))return'land';if(n.includes('commercial')||n.includes('shop')||n.includes('office'))return'commercial';if(n.includes('factory')||n.includes('industrial'))return'factory';if(n.includes('house')||n.includes('residential'))return'house';return''}
+const SUPABASE_URL='https://ztjdhefalxvgtvvijfad.supabase.co';
+const SUPABASE_KEY='sb_publishable_dm6em0d3BKNCvKVnKCfZjA_cYlSnO5t';
+const SUPABASE_TABLES={land:'land_listings',commercial:'commercial_listings',factory:'factory_listings',house:'house_listings'};
+const SUPABASE_COLUMNS={
+ land:['reference_number','name','state','area','land_size','title','inter_bumi','zoning','asking_price_rental','approximately_rm','notes','status','photo_folder'],
+ commercial:['reference_number','name','state','area','size_sqft','title','inter_bumi','asking_price_rental','status','photo_folder'],
+ factory:['reference_number','name','state','area','land_size','build_up_sqft','title','inter_bumi','power_amp','asking_price_rental','notes','roi_percent','status','photo_folder'],
+ house:['reference_number','name','state','area','land_size_sqft','size_sqft','title','inter_bumi','bedroom_bathroom','asking_price_rental','notes','status','photo_folder']
+};
+const HEADER_ALIASES={
+ reference_number:['reference number','reference no','reference no.','ref no','ref no.','ref','reference','reference number'],
+ name:['name','property name','project name'], state:['state','negeri','state / negeri'], area:['area','location','district','daerah'],
+ land_size:['land size','land size sqft','land size (sqft)','land size (sq ft)','land size acres','land size (acres)'],
+ land_size_sqft:['land size sqft','land size (sqft)','land size (sq ft)','land size'],
+ size_sqft:['size sqft','size (sqft)','size (sq ft)','size','built up sqft','built‑up sqft'],
+ build_up_sqft:['build up sqft','build up (sqft)','build‑up sqft','build‑up (sqft)','built up sqft','built‑up sqft','build up'],
+ title:['title','tenure','title type'], inter_bumi:['inter/bumi','inter / bumi','inter bumi','international/bumi','international / bumi','bumi/non bumi','inter'],
+ zoning:['zoning','land zoning','zoning / land use'], asking_price_rental:['asking price / rental (rm)','asking price/rental (rm)','asking price / rental','asking price/rental','asking price','rental (rm)','rental'],
+ approximately_rm:['approximately (rm)','approximately rm','approximately','approx (rm)','approx'], notes:['notes','remark','remarks','description'], status:['status','availability','property status'],
+ photo_folder:['photo folder','photos','photo link','photo folder link','google drive','photo folder url'], power_amp:['power (amp)','power amp','power','amp','power (a)','power (ampere)'],
+ roi_percent:['roi (%)','roi','roi percent','roi (%)'], bedroom_bathroom:['bedroom/bathroom','bedroom / bathroom','bedroom bathroom','bedrooms/bathrooms','bedrooms / bathrooms','bedroom','bathroom']
+};
+function headerKey(x){return norm(x).replace(/[\u2013\u2014]/g,'‑').replace(/\s+/g,' ').trim()}
+function cleanNumericValue(value){
+  if(value===null||value===undefined||String(value).trim()==='') return null;
+  if(typeof value==='number' && Number.isFinite(value)) return value;
+  const s=String(value).trim().replace(/,/g,'');
+  const m=s.match(/[-+]?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : null;
+}
+function excelToDb(c,p){
+ const row={};
+ const keys=Object.keys(p);
+ const numericCandidates=new Set(['land_size','land_size_sqft','size_sqft','build_up_sqft','power_amp','roi_percent','approximately_rm']);
+ for(const col of SUPABASE_COLUMNS[c]){
+   const aliases=HEADER_ALIASES[col]||[col];
+   const k=keys.find(k=>aliases.includes(headerKey(k)) || headerKey(k)===headerKey(col));
+   let value=k!==undefined ? (p[k]??'') : '';
+   if(numericCandidates.has(col)){
+      if(value===null || value===undefined || String(value).trim()==='') value=null;
+      else if(typeof value==='string'){
+         const n=cleanNumericValue(value);
+         value=n===null?null:n;
+      }
+   }
+   row[col]=value;
+ }
+ return row;
+}
+function dbToLocal(c,r){
+ const p={_category:c,_id:r.id??''};
+ SUPABASE_COLUMNS[c].forEach(col=>{const aliases=HEADER_ALIASES[col]||[col];const label=aliases[0];p[label.replace(/\b\w/g,m=>m.toUpperCase())]=r[col]??''});
+ p['Reference Number']=r.reference_number??'';p['Name']=r.name??'';p['State']=r.state??'';p['Area']=r.area??'';
+ return p;
+}
+async function supabaseInsertRows(c,rows){
+ if(!rows.length)return[];
+ const table=SUPABASE_TABLES[c];
+ const clean=rows.map(excelToDb.bind(null,c));
+ const missing=clean.findIndex(r=>!String(r.reference_number||'').trim());
+ if(missing>=0)throw new Error('Row '+(missing+2)+' is missing Reference Number.');
+ const out=[];
+ const chunkSize=100;
+ for(let i=0;i<clean.length;i+=chunkSize){
+   const chunk=clean.slice(i,i+chunkSize);
+   try{
+     const created=await supabaseRequest(table,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(chunk)});
+     out.push(...(created||[]));
+   }catch(e){
+     for(let j=0;j<chunk.length;j++){
+       try{
+         const created=await supabaseRequest(table,{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(chunk[j])});
+         out.push(...(created||[]));
+       }catch(one){
+         throw new Error('Excel row '+(i+j+2)+' failed: '+one.message+' If this is a numeric‑column error, the value contains text such as SQFT/acres/RM and the file will need the numeric field cleaned.');
+       }
+     }
+   }
+ }
+ return out;
+}
+async function supabaseInsertListing(c,p){const created=await supabaseInsertRows(c,[p]);if(created?.[0]?.id)p._id=created[0].id;return created?.[0]||null}
+async function supabaseUpsertListing(c,p){return supabaseInsertListing(c,p)}
+async function fetchAllRows(table){
+ const pageSize=1000;let offset=0,all=[];
+ while(true){
+   const rows=await supabaseRequest(table+'?select=*&order=id.asc&offset='+offset+'&limit='+pageSize);
+   all.push(...(rows||[]));
+   if(!rows || rows.length<pageSize)break;
+   offset+=pageSize;
+ }
+ return all;
+}
+async function __reloadSupabaseSafe(){
+ const btn=document.getElementById('reloadSupabaseBtn');
+ if(btn&&btn.dataset.busy==='1')return false;
+ if(btn){btn.dataset.busy='1';btn.disabled=true;btn.textContent='⏳ Reloading Supabase…';}
+ try{
+   setSyncStatus('☁️ Reloading Supabase…');
+   await loadCloud();
+   await loadViewingAppointmentsFromCloud();
+   if(btn)btn.textContent='☁️ Reload Supabase';
+ }catch(e){
+   const msg=e&&e.message?e.message:String(e);
+   setSyncStatus('❌ Reload failed: '+msg);
+   alert('Supabase Reload failed:\n\n'+msg);
+ }finally{
+   if(btn){btn.dataset.busy='0';btn.disabled=false;}
+ }
+ return false;
+}
+window.__reloadSupabaseSafe=__reloadSupabaseSafe;
+
+// Phase7 Excel导入保护：仅操作房源表，绝不碰crm_records Owner数据
+async function replaceCategoryFromExcel(c,rows,fileName){
+ const table=SUPABASE_TABLES[c];
+ const ownerBackup=JSON.parse(JSON.stringify(listingMeta));
+ const existing=await fetchAllRows(table);
+ for(let i=0;i<existing.length;i+=100){
+   const ids=existing.slice(i,i+100).map(r=>r.id).filter(x=>x!==undefined&&x!==null);
+   if(ids.length){
+     const filter=ids.join(',');
+     await supabaseRequest(table+'?id=in.('+encodeURIComponent(filter)+')',{method:'DELETE',headers:{Prefer:'return=minimal'}});
+   }
+ }
+ const remaining=await fetchAllRows(table);
+ if(remaining.length){
+   throw new Error('Could not clear '+remaining.length+' existing '+c+' rows. Supabase DELETE permission is not enabled for anon on '+table+'. Run the one‑time RLS SQL provided with this file, then upload again. No new rows were added.');
+ }
+ const created=await supabaseInsertRows(c,rows);
+ if(created.length!==rows.length){
+   throw new Error('Supabase inserted '+created.length+' rows but Excel contains '+rows.length+' rows.');
+ }
+ database[c]=created.map(r=>dbToLocal(c,r));
+ listingMeta=ownerBackup;
+ saveAgentDB();
+ sortListings();save();renderAll();renderCustomerProperties();
+ log('✅ '+fileName+' → '+c.toUpperCase()+': '+created.length+' rows imported. Existing '+existing.length+' '+c+' rows replaced. Owner database preserved, untouched by Excel import.');
+ setSyncStatus('☁️ '+c.toUpperCase()+' synced · '+created.length+' rows',true);
+}
+
+async function importOne(file,forced){
+ if(!adminUnlocked){openAdminLogin();return}
+ try{
+   const c=forced||guessCategory(file.name);
+   if(!SUPABASE_TABLES[c])throw new Error('Unable to determine category. Use the Land / Commercial / Factory / House upload box.');
+   const rows=await readFile(file);
+   if(!rows.length)throw new Error('No data rows found in the Excel file.');
+   await replaceCategoryFromExcel(c,rows,file.name);
+ }catch(e){log('❌ '+file.name+': '+e.message);setSyncStatus('❌ Sync failed: '+e.message);alert('Import / Supabase sync failed\n\n'+e.message)}
+}
+function setSyncStatus(t,ok=false){const e=document.getElementById('syncStatus');if(e){e.textContent=t;e.style.background=ok?'#f0fdf4':'#eff6ff';e.style.color=ok?'#166534':'#1e40af'}}
+async function supabaseRequest(path,options={},_retried=false){
+  let headers=authHeaders({'Content‑Type':'application/json',...(options.headers||{})});
+  let res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers});
+  let text=await res.text();
+  if((res.status===401||res.status===403)&&!_retried){
+    try{
+      const restored=await restoreSecureAdminSession();
+      if(restored&&getAuthAccessTokenSync()){
+        headers=authHeaders({'Content‑Type':'application/json',...(options.headers||{})});
+        res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers});
+        text=await res.text();
+      }
+    }catch(e){}
+  }
+  if(!res.ok){
+    if(res.status===401||res.status===403){
+      throw new Error('Supabase '+res.status+': Authentication required. Please sign in to the CRM Admin account, then try again. '+text);
+    }
+    throw new Error('Supabase '+res.status+': '+text);
+  }
+  return text?JSON.parse(text):null;
+}
+async function quickImport(c){if(!adminUnlocked){openAdminLogin();return}let input=document.getElementById('quick'+c.charAt(0).toUpperCase()+c.slice(1)+'Files');if(!input||!input.files.length){alert('Please select an Excel file first.');return}for(const file of input.files)await importOne(file,c);input.value='';sortListings();save();renderAll();showCategory(c)}
+async function importCategory(c){if(!adminUnlocked){openAdminLogin();return}let input=document.getElementById(c+'Files');if(!input.files.length)return alert('Please select an Excel file first.');for(const file of input.files)await importOne(file,c);input.value='';sortListings();save();renderAll()}
+document.getElementById('allFiles').onchange=async e=>{for(const f of e.target.files)await importOne(f,'');e.target.value='';sortListings();save();renderAll()};
+function log(s){let el=document.getElementById('log');el.innerHTML=esc(s)+'<br>'+el.innerHTML}
+function states(c){return [...new Set(database[c].map(getState))].sort((a,b)=>a.localeCompare(b))}
+function setState(c,s){stateFilter[c]=s;renderCategory(c)}
+function renderStates(c){let el=document.getElementById(c+'States'),ss=states(c);el.innerHTML=ss.length?`<button class="statebtn ${stateFilter[c]==='ALL'?'active':''}" onclick="setState('${c}','ALL')">All States (${database[c].length})</button>`+ss.map(s=>`<button class="statebtn ${stateFilter[c]===s?'active':''}" onclick='setState(${JSON.stringify(c)},${JSON.stringify(s)})'>${esc(s)} (${database[c].filter(p=>getState(p)===s).length})</button>`).join(''):''}
+function renderCategory(c){renderStates(c);let q=norm(document.getElementById(c+'Search').value),arr=database[c].filter(p=>stateFilter[c]==='ALL'||getState(p)===stateFilter[c]).filter(p=>!q||Object.entries(p).some(([k,v])=>!k.startsWith('_')&&norm(v).includes(q)));document.getElementById(c+'Count').textContent=`${c[0].toUpperCase()+c.slice(1)}: ${arr.length}`;arr.sort((a,b)=>compareReference(getRef(a),getRef(b)));document.getElementById(c+'Results').innerHTML=arr.length?arr.map(propertyCard).join(''):`<div class="no‑data">No matching property.</div>`}
+function propertyCard(p){
+  let c=p._category, fields=Object.entries(p).filter(([k])=>!k.startsWith('_'));
+  let ident=ownerIdentity(p);
+  let html='<div class="property"><details><summary class="property‑toggle"><span class="property‑title">'+esc(getRef(p)||'NO REF')+' — '+esc(getName(p))+'</span><div class="property‑sub">'+icon(c)+' '+c.toUpperCase()+' · 📍 '+esc(getState(p))+'</div></summary><div class="property‑details"><table class="property‑table">';
+  fields.forEach(([k,v])=>{if(String(v)==='')return;html+='<tr><th>'+esc(k)+'</th><td>'+formatValue(k,v)+'</td></tr>'});
+  const od=getOwnerDetails(c,p);
+  html+='</table><div class="owner‑box" data‑owner‑c="'+escAttr(c)+'" data‑owner‑id="'+escAttr(ident)+'">';
+  html+='<div class="owner‑private‑title"><b>🔐 Listing Owner</b><span>Owner Database No.: <b>'+esc(ownerDatabaseNo(c,p))+'</b> · Admin only · editable</span></div>';
+  html+='<div class="formgrid" style="margin:0 0 10px">';
+  html+='<div class="formfield"><label>Owner Name</label><input class="owner‑field‑name" value="'+escAttr(od.name||'')+'" placeholder="Owner name" autocomplete="off" readonly></div>';
+  html+='<div class="formfield"><label>Owner Company</label><input class="owner‑field‑company" value="'+escAttr(od.company||'')+'" placeholder="Company / Business" autocomplete="off" readonly></div>';
+  html+='<div class="formfield"><label>WhatsApp / Phone</label><input class="owner‑field‑phone" value="'+escAttr(od.phone||'')+'" placeholder="Phone" autocomplete="off" readonly></div>';
+  html+='<div class="formfield"><label>Email</label><input class="owner‑field‑email" value="'+escAttr(od.email||'')+'" placeholder="Email" autocomplete="off" readonly></div>';
+  html+='<div class="formfield"><label>Interaction Date</label><input class="owner‑field‑date" type="date" value="'+escAttr(od.date||new Date().toISOString().slice(0,10))+'" readonly></div>';
+  html+='<div class="formfield"><label>Status</label><select class="owner‑field‑status" disabled><option '+((od.status||'Enquiry')==='Enquiry'?'selected':'')+'>Enquiry</option><option '+((od.status||'')==='Listing'?'selected':'')+'>Listing</option><option '+((od.status||'')==='Viewing'?'selected':'')+'>Viewing</option><option '+((od.status||'')==='Offer'?'selected':'')+'>Offer</option><option '+((od.status||'')==='Closed'?'selected':'')+'>Closed</option><option '+((od.status||'')==='Not Proceeding'?'selected':'')+'>Not Proceeding</option></select></div>';
+  html+='<div class="formfield full"><label>Owner Request / Remarks</label><textarea class="owner‑field‑remarks" placeholder="Owner request, asking price, terms, follow‑up, viewing, commission, etc." readonly>'+esc(od.remarks||'')+'</textarea></div></div>';
+  html+='<div class="actions owner‑actions"><button type="button" class="btn light owner‑edit‑btn" data‑owner‑action="edit">✏️ Edit</button><button type="button" class="btn owner‑save‑btn" data‑owner‑action="save" style="display:none">💾 Save</button></div></div>';
+  html+='<div class="actions"><button type="button" class="btn danger" onclick="event.stopPropagation();deleteProperty('+JSON.stringify(c)+','+JSON.stringify(p._id)+','+JSON.stringify(getRef(p))+','+JSON.stringify(getName(p))+')">🗑️ Delete</button></div>';
+  let ph=photosFor(getRef(p));
+  if(ph.length)html+='<div class="photo‑grid">'+ph.map(x=>'<img src="'+esc(x)+'" alt="">').join('')+'</div>';
+  return html+'</div></details></div>';
+}
+function formatValue(k,v){let s=String(v);if(norm(k).includes('photo folder')&&/^https?:\/\//i.test(s))return`<a class="drive" href="${esc(s)}" target="_blank" rel="noopener noreferrer">📷 Open Google Drive Photos</a>`;if(/^https?:\/\//i.test(s))return`<a href="${esc(s)}" target="_blank" rel="noopener noreferrer">${esc(s)}</a>`;return esc(s).replace(/\n/g,'<br>')}
+function icon(c){return c==='land'?'🌳':c==='commercial'?'🏢':c==='factory'?'🏭':'🏠'}
+
+const LEAD_KEY='EvelynPropertyHub_Leads';
+const SUPABASE_LEADS_TABLE='crm_leads';
+const SUPABASE_CRM_TABLE='crm_records';
+
+async function upsertCRMRecord(kind,recordId,data){
+  const row={id:String(kind)+'::'+String(recordId),kind:String(kind),data:data||{},updated_at:new Date().toISOString()};
+  return await supabaseRequest(SUPABASE_CRM_TABLE+'?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge‑duplicates,return=minimal'},body:JSON.stringify([row])});
+}
+async function deleteCRMRecord(kind,recordId){
+  return await supabaseRequest(SUPABASE_CRM_TABLE+'?id=eq.'+encodeURIComponent(String(kind)+'::'+String(recordId)),{method:'DELETE',headers:{Prefer:'return=minimal'}});
+}
+
+// ========== Phase3 Viewing Appointment Supabase CRUD ==========
+const SUPABASE_APPOINTMENT_TABLE = "crm_viewing_appointments";
+
+async function loadViewingAppointmentsFromCloud(){
+  try{
+    const rows = await fetchAllRows(SUPABASE_APPOINTMENT_TABLE);
+    viewingAppointments = rows || [];
+    renderViewingAppointmentReminder();
+  }catch(e){
+    console.warn("Load viewing appointments error:",e);
+  }
+}
+async function insertAppointment(payload){
+  const res = await supabaseRequest(SUPABASE_APPOINTMENT_TABLE,{
+    method:"POST",
+    headers:{"Prefer":"return=representation","Content‑Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+  viewingAppointments.push(res[0]);
+  renderViewingAppointmentReminder();
+  return res[0];
+}
+async function updateAppointment(appId,payload){
+  await supabaseRequest(SUPABASE_APPOINTMENT_TABLE+"?id=eq."+encodeURIComponent(String(appId)),{
+    method:"PATCH",
+    headers:{"Prefer":"return=representation","Content‑Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+  const fresh = await fetchAllRows(SUPABASE_APPOINTMENT_TABLE);
+  viewingAppointments = fresh;
+  renderViewingAppointmentReminder();
+}
+async function deleteAppointment(appId){
+  await supabaseRequest(SUPABASE_APPOINTMENT_TABLE+"?id=eq."+encodeURIComponent(String(appId)),{method:"DELETE"});
+  viewingAppointments = viewingAppointments.filter(a=>Number(a.id)!==Number(appId));
+  renderViewingAppointmentReminder();
+}
+// Phase5 Day Filter
+function setAppointmentFilter(val){
+  activeAppointmentFilter = val;
+  renderViewingAppointmentReminder();
+}
+
+// ========== Phase1 修复：Lead完整保存函数 ==========
+async function saveFullLeadById(leadRawId){
+  const leadId = Number(leadRawId);
+  if(isNaN(leadId)){ alert("Invalid lead ID"); return; }
+  let freshRecords;
+  try{
+    freshRecords = await supabaseRequest(`crm_leads?id=eq.${encodeURIComponent(String(leadId))}&select=*`);
+  }catch(e){
+    alert(`Fetch lead failed: ${e.message}`);
+    return;
+  }
+  if(!Array.isArray(freshRecords) || freshRecords.length !== 1){
+    alert("Lead record not found on Supabase");
+    return;
+  }
+  const cloudLead = freshRecords[0];
+  const cardEl = document.querySelector(`.lead‑record‑card[data‑lead‑kind][data‑lead‑id="${escAttr(String(leadId))}"]`);
+  if(!cardEl){ alert("Lead UI card not found"); return; }
+  const cardInputs = cardEl.querySelectorAll("input,select,textarea");
+  const saveBtn = cardEl.querySelector(".lead‑full‑save‑btn");
+  cardInputs.forEach(i=>i.disabled=true);
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent="⏳ Saving…"; }
+  try{
+    const immutableKeys = ["id","date","customerCode"];
+    const patchPayload = {...cloudLead.data};
+    patchPayload.name = (cardEl.querySelector('[id^="leadName"]')?.value||'').trim();
+    patchPayload.phone = (cardEl.querySelector('[id^="leadPhone"]')?.value||'').trim();
+    patchPayload.nationality = (cardEl.querySelector('[id^="leadNationality"]')?.value||'').trim();
+    patchPayload.mode = (cardEl.querySelector('[id^="leadMode"]')?.value||'').trim();
+    patchPayload.type = (cardEl.querySelector('[id^="leadType"]')?.value||'').trim();
+    patchPayload.state = (cardEl.querySelector('[id^="leadState"]')?.value||'').trim();
+    patchPayload.area = (cardEl.querySelector('[id^="leadArea"]')?.value||'').trim();
+    patchPayload.budget = (cardEl.querySelector('[id^="leadBudget"]')?.value||'').trim();
+    patchPayload.size = (cardEl.querySelector('[id^="leadSize"]')?.value||'').trim();
+    patchPayload.notes = (cardEl.querySelector('[id^="leadNotes"]')?.value||'').trim();
+    patchPayload.status = (cardEl.querySelector('select[onchange*="updateLeadField"]')?.value||'New');
+    for(const ik of immutableKeys) delete patchPayload[ik];
+    await supabaseRequest(`crm_leads?id=eq.${encodeURIComponent(String(leadId))}`,{
+      method:"PATCH",
+      headers:{"Prefer":"return=representation","Content‑Type":"application/json"},
+      body:JSON.stringify(patchPayload)
+    });
+    const afterSave = await supabaseRequest(`crm_leads?id=eq.${encodeURIComponent(String(leadId))}&select=*`);
+    if(!Array.isArray(afterSave) || afterSave.length!==1) throw new Error("Post‑save read‑back failed");
+    const idx = leads.findIndex(l=>Number(l.id)===leadId);
+    if(idx>=0) leads[idx] = afterSave[0].data;
+    saveLeads(false);
+    renderLeadCRM();
+    alert("✅ Lead saved successfully (synced from Supabase)");
+  }catch(err){
+    alert(`❌ Save failed: ${err.message}\nNo changes committed to Supabase.`);
+  }finally{
+    cardInputs.forEach(i=>i.disabled=false);
+    if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent="💾 Save Lead Changes"; }
+  }
+}
+
+// Phase1 Delegated click & touchend for lead save button
+document.addEventListener("click",async function(e){
+  const btn = e.target?.closest?.(".lead‑full‑save‑btn");
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  const lid = btn.dataset.leadId;
+  await saveFullLeadById(lid);
+},true);
+document.addEventListener("touchend",async function(e){
+  const btn = e.target?.closest?.(".lead‑full‑save‑btn");
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  const lid = btn.dataset.leadId;
+  await saveFullLeadById(lid);
+},{passive:false,capture:true});
+
+// ========== Phase2 Open Lead Modal ==========
+async function openLeadModal(leadNumericId){
+  const lid = Number(leadNumericId);
+  if(isNaN(lid)) return alert("Bad lead id");
+  let res;
+  try{
+    res = await supabaseRequest(`crm_leads?id=eq.${encodeURIComponent(String(lid))}&select=*`);
+  }catch(ex){alert("Cannot fetch lead: "+ex.message);return;}
+  if(!Array.isArray(res)||res.length!==1) return alert("Lead not found");
+  const ld = res[0].data;
+  const modalbox = document.getElementById("modalbox");
+  modalbox.innerHTML=`
+<h2>📋 Open Customer Lead (CST:${esc(ld.customerCode||'‑')})</h2>
+<div class="formgrid">
+<div class="formfield"><label>Name</label><input id="modalLeadName" value="${escAttr(ld.name||'')}"></div>
+<div class="formfield"><label>WhatsApp / Phone</label><input id="modalLeadPhone" value="${escAttr(ld.phone||'')}"></div>
+<div class="formfield"><label>Enquiry Type</label><select id="modalLeadMode">
+<option value="Buy" ${ld.mode==='Buy'?'selected':''}>🟢 Buyer</option>
+<option value="Rent" ${ld.mode==='Rent'?'selected':''}>🔵 Tenant</option>
+</select></div>
+<div class="formfield"><label>Property Type</label><select id="modalLeadType">
+<option>Land</option><option>Commercial</option><option>Factory</option><option>House</option><option>Other</option>
+</select>
+</div>
+<div class="formfield"><label>State</label><input id="modalLeadState" value="${escAttr(ld.state||'')}"></div>
+<div class="formfield"><label>Area</label><input id="modalLeadArea" value="${escAttr(ld.area||'')}"></div>
+<div class="formfield"><label>Budget</label><input id="modalLeadBudget" value="${escAttr(ld.budget||'')}"></div>
+<div class="formfield full"><label>Notes / Requirement</label><textarea id="modalLeadNotes" rows="5">${esc(ld.notes||'')}</textarea></div>
+</div>
+<div class="actions">
+<button class="btn" onclick="saveLeadFromModal(${lid})">💾 Save Lead Modal Changes</button>
+<button class="btn light" onclick="closeModal()">Close</button>
+</div>
+`;
+  document.getElementById("modal").classList.add("show");
+}
+async function saveLeadFromModal(leadId){
+  const patchPayload={};
+  patchPayload.name=document.getElementById("modalLeadName").value.trim();
+  patchPayload.phone=document.getElementById("modalLeadPhone").value.trim();
+  patchPayload.mode=document.getElementById("modalLeadMode").value;
+  patchPayload.type=document.getElementById("modalLeadType").value;
+  patchPayload.state=document.getElementById("modalLeadState").value.trim();
+  patchPayload.area=document.getElementById("modalLeadArea").value.trim();
+  patchPayload.budget=document.getElementById("modalLeadBudget").value.trim();
+  patchPayload.notes=document.getElementById("modalLeadNotes").value.trim();
+  try{
+    await supabaseRequest(`crm_leads?id=eq.${encodeURIComponent(String(leadId))}`,{
+      method:"PATCH",
+      headers:{"Prefer":"return=representation","Content‑Type":"application/json"},
+      body:JSON.stringify(patchPayload)
+    });
+    closeModal();
+    await loadLeadsFromCloud();
+    renderLeadCRM();
+    alert("✅ Lead modal saved");
+  }catch(e){alert("Save modal lead failed: "+e.message);}
+}
+document.addEventListener("click",function(e){
+  const btn=e.target?.closest?.(".open‑lead‑modal‑btn");
+  if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  openLeadModal(btn.dataset.leadId);
+},true);
+document.addEventListener("touchend",function(e){
+  const btn=e.target?.closest?.(".open‑lead‑modal‑btn");
+  if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  openLeadModal(btn.dataset.leadId);
+},{passive:false,capture:true});
+
+// ========== Phase3 New Appointment Modal ==========
+function openNewAppointmentModal(){
+  const mb=document.getElementById("modalbox");
+  mb.innerHTML=`
+<h2>➕ New Viewing Appointment</h2>
+<div class="formgrid">
+<div class="formfield"><label>Lead ID(CST)</label><input id="appLeadId" placeholder="Lead numeric id"></div>
+<div class="formfield"><label>Agent Interaction ID(optional)</label><input id="appAgentId" placeholder="agent id"></div>
+<div class="formfield"><label>Listing Reference</label><input id="appListingRef" placeholder="ref no"></div>
+<div class="formfield"><label>Day Number (1‑4)</label><input type="number" min="1" max="4" id="appDayNum" value="1"></div>
+<div class="formfield"><label>Appointment Date YYYY‑MM‑DD</label><input type="date" id="appDate"></div>
+<div class="formfield"><label>Time HH:mm</label><input type="time" id="appTime"></div>
+<div class="formfield full"><label>Remark</label><textarea id="appRemark"></textarea></div>
+</div>
+<div class="actions">
+<button class="btn" onclick="submitNewAppointment()">💾 Create Appointment</button>
+<button class="btn light" onclick="closeModal()">Cancel</button>
+</div>
+`;
+  document.getElementById("modal").classList.add("show");
+}
+async function submitNewAppointment(){
+  const payload={
+    lead_id:Number(document.getElementById("appLeadId").value||0)||null,
+    agent_interaction_id:Number(document.getElementById("appAgentId").value||0)||null,
+    listing_ref:document.getElementById("appListingRef").value.trim(),
+    day_number:Number(document.getElementById("appDayNum").value),
+    appointment_date:document.getElementById("appDate").value.trim(),
+    appointment_time:document.getElementById("appTime").value.trim(),
+    remark:document.getElementById("appRemark").value.trim()
+  };
+  try{
+    await insertAppointment(payload);
+    closeModal();
+    alert("✅ Appointment created");
+  }catch(e){alert("Create appointment failed: "+e.message);}
+}
+
+let leads=[];
+try{leads=JSON.parse(localStorage.getItem(LEAD_KEY)||'[]')}catch(e){leads=[]}
+function saveLeads(sync=true){localStorage.setItem(LEAD_KEY,JSON.stringify(leads)); if(sync) queueLeadCloudSync()}
+let leadCloudSyncTimer=null;
+let leadCloudSyncBusy=false;
+function queueLeadCloudSync(){clearTimeout(leadCloudSyncTimer);leadCloudSyncTimer=setTimeout(()=>syncAllLeadsToCloud().catch(e=>{console.warn('Lead cloud sync failed',e);setSyncStatus('⚠️ Lead cloud sync failed: '+e.message)}),250)}
+async function syncLeadToCloud(lead){
+ try{
+   const token=typeof getAuthAccessTokenSync==='function'?getAuthAccessTokenSync():'';
+   if(!token || token===SUPABASE_KEY) return Promise.resolve({localOnly:true});
+ }catch(e){ return Promise.resolve({localOnly:true}); }
+ const row={id:Number(lead.id),data:lead,updated_at:new Date().toISOString()};
+ return supabaseRequest(SUPABASE_LEADS_TABLE+'?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge‑duplicates,return=minimal'},body:JSON.stringify([row])});
+}
+async function syncAllLeadsToCloud(){
+ if(leadCloudSyncBusy||!leads.length)return;
+ leadCloudSyncBusy=true;
+ try{for(let i=0;i<leads.length;i+=50){await Promise.all(leads.slice(i,i+50).map(syncLeadToCloud));}setSyncStatus('☁️ CRM synced · '+leads.length+' customer records',true)}finally{leadCloudSyncBusy=false}
+}
+async function loadLeadsFromCloud(){
+ try{
+   const rows=await supabaseRequest(SUPABASE_LEADS_TABLE+'?select=id,data,updated_at&order=id.desc&limit=5000');
+   if(Array.isArray(rows)&&rows.length){
+     const cloud=rows.map(r=>{let d=(r&&r.data&&typeof r.data==='object')?r.data:{};if(d.id==null)d.id=Number(r.id);return d}).filter(x=>x&&x.id!=null);
+     const byId=new Map(leads.map(x=>[String(x.id),x]));
+     cloud.forEach(x=>byId.set(String(x.id),x));
+     leads=[...byId.values()].sort((a,b)=>Number(b.id)-Number(a.id));
+     localStorage.setItem(LEAD_KEY,JSON.stringify(leads));
+   }
+   setSyncStatus('☁️ Supabase connected · CRM '+leads.length+' customer records',true);
+ }catch(e){
+   console.warn('Could not load CRM leads from Supabase:',e);
+   setSyncStatus('⚠️ Property data connected · CRM table setup required');
+ }
+}
+function classifyCustomer(lead){const text=[lead.mode,lead.notes,lead.area,lead.type,lead.budget].join(' ').toLowerCase();const hasRent=['rent','rental','lease','tenancy','tenant','sewa','租','租金','租赁'].some(w=>text.includes(w));const hasBuy=['buy','purchase','sale','buyer','buying','买','购买','出售','购'].some(w=>text.includes(w));if(hasRent&&hasBuy)return 'Buyer + Tenant';if(String(lead.mode||'').toLowerCase()==='rent'||hasRent)return 'Tenant';if(String(lead.mode||'').toLowerCase()==='buy'||hasBuy)return 'Buyer';return 'Unknown'}
+function customerTypeBadge(v){return ({'Buyer':'🟢 Buyer','Tenant':'🔵 Tenant','Buyer + Tenant':'🟣 Buyer + Tenant','Unknown':'⚪ Unknown'})[v]||'⚪ Unknown'}
+leads.forEach(x=>x.customerType=classifyCustomer(x));localStorage.setItem(LEAD_KEY,JSON.stringify(leads));
+
+const AGENT_DB_KEY='EvelynPropertyHub_AgentInteractions';
+const LISTING_META_KEY='EvelynPropertyHub_ListingMeta';
+let agentInteractions=[]; let listingMeta={};
+try{agentInteractions=JSON.parse(localStorage.getItem(AGENT_DB_KEY)||'[]')}catch(e){agentInteractions=[]}
+try{listingMeta=JSON.parse(localStorage.getItem(LISTING_META_KEY)||'{}')}catch(e){listingMeta={}}
+function saveAgentDB(){localStorage.setItem(AGENT_DB_KEY,JSON.stringify(agentInteractions));localStorage.setItem(LISTING_META_KEY,JSON.stringify(listingMeta))}
+
+async function syncOwnerCloud(c,p,d){
+  if(!(await ensureAdminSession(true))) throw new Error('CRM Admin session is not signed in. Please sign in first.');
+  const key=listingKey(c,p);
+  await upsertCRMRecord('listing_owner',key,{ownerNo:key,listingKey:key,listingReference:String(getRef(p)||'').trim(),listingType:String(c||''),ownerDetails:d,ownerName:d.name||''});
+  const verify=await supabaseRequest(SUPABASE_CRM_TABLE+'?select=id,kind,data&id=eq.'+encodeURIComponent('listing_owner::'+key));
+  if(!Array.isArray(verify)||verify.length!==1) throw new Error('Supabase did not confirm the Owner record. Please run the crm_records setup SQL and enable INSERT/UPDATE/SELECT policies.');
+}
+async function syncAgentCloud(record){
+  if(!(await ensureAdminSession(true))) throw new Error('CRM Admin session is not signed in. Please sign in first.');
+  await upsertCRMRecord('agent_interaction',record.id,record);
+}
+function listingKey(c,p){
+  const ref=String(getRef(p)||'').trim();
+  const fallback=(p&&p._id!==undefined&&p._id!==null&&String(p._id)!=='')?String(p._id):'';
+  return String(c||'')+'::'+(ref||fallback);
+}
+function ownerDatabaseNo(c,p){ return listingKey(c,p); }
+function ownerIdentity(p){return String(getRef(p)||((p&&p._id!==undefined&&p._id!==null)?p._id:'')||'').trim()}
+function getOwnerDetails(c,p){
+  const k=listingKey(c,p);
+  if(listingMeta[k]?.ownerDetails)return listingMeta[k].ownerDetails;
+  const legacyId=(p&&p._id!==undefined&&p._id!==null)?String(p._id):'';
+  const legacyKey=String(c||'')+'::'+legacyId;
+  if(legacyId && listingMeta[legacyKey]?.ownerDetails){
+    listingMeta[k]=Object.assign({},listingMeta[legacyKey],{ownerDetails:listingMeta[legacyKey].ownerDetails});
+    saveAgentDB();
+    return listingMeta[k].ownerDetails;
+  }
+  return {name:'',company:'',phone:'',email:'',date:'',status:'Enquiry',remarks:''}
+}
+function getListingOwner(c,p){return getOwnerDetails(c,p).name||''}
+function ownerFind(c,id){const wanted=String(id??'');return (database[c]||[]).find(x=>ownerIdentity(x)===wanted)||null}
+function ownerDataFromBox(box){
+ const v=sel=>String(box.querySelector(sel)?.value||'').trim();
+ return {name:v('.owner‑field‑name'),company:v('.owner‑field‑company'),phone:v('.owner‑field‑phone'),email:v('.owner‑field‑email'),date:v('.owner‑field‑date'),status:v('.owner‑field‑status')||'Enquiry',remarks:v('.owner‑field‑remarks')};
+}
+
+// ========== Phase6 Owner save fix: await read‑back confirm ==========
+async function saveInlineOwnerDetails(c,id,box){
+ if(window.__ownerSaving)return;
+ window.__ownerSaving=true;
+ try{
+   box=box||document.querySelector('.owner‑box[data‑owner‑c="'+CSS.escape(String(c))+'"][data‑owner‑id="'+CSS.escape(String(id))+'"]');
+   if(!box)throw new Error('Owner form not found.');
+   const d=ownerDataFromBox(box);
+   const p=ownerFind(c,id);
+   if(!p) throw new Error('Listing not found.');
+   const key=listingKey(c,p);
+   listingMeta[key]=Object.assign({},listingMeta[key],{ownerNo:key,listingKey:key,listingReference:String(getRef(p)||'').trim(),listingType:String(c||''),ownerDetails:d,ownerName:d.name||'',updatedAt:new Date().toISOString()});
+   saveAgentDB();
+   setSyncStatus('💾 Owner information saved · syncing to Supabase…',true);
+   const btn=box.querySelector('.owner‑save‑btn'); if(btn)btn.disabled=true;
+   try{
+     await syncOwnerCloud(c,p,d);
+     const verify=await supabaseRequest(SUPABASE_CRM_TABLE+'?select=*&id=eq.'+encodeURIComponent('listing_owner::'+key));
+     if(!Array.isArray(verify)||verify.length!==1) throw new Error("Supabase post‑save verify failed");
+     setSyncStatus('☁️ Owner information saved to Supabase, verified',true);
+     alert('✅ Owner Information saved successfully and verified from cloud.');
+   }catch(e){
+     setSyncStatus('⚠️ Owner saved locally · Supabase sync failed: '+e.message,false);
+     alert('Owner Information was saved on this device, but Supabase sync failed.\n\n'+e.message+'\n\nPlease make sure CRM Admin is logged in, then try Save again.');
+   }
+   const ref=getRef(p); renderCategory(c);
+   const results=document.getElementById(c+'Results');
+   if(results&&ref){const ds=[...results.querySelectorAll('details')];const d0=ds.find(x=>{const t=x.querySelector('.property‑title');return t&&t.textContent.indexOf(String(ref))===0});if(d0)d0.open=true;}
+ }catch(e){alert('Owner save failed.\n\n'+e.message)}finally{window.__ownerSaving=false;}
+}
+function ensureOwnerEditOverlay(){
+ let ov=document.getElementById('ownerEditOverlay');
+ if(ov)return ov;
+ ov=document.createElement('div');ov.id='ownerEditOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align‑items:center;justify‑content:center;padding:16px;z‑index:100000;pointer‑events:none;';
+ ov.innerHTML='<div id="ownerEditBox" style="background:#fff;width:min(760px,100%);max‑height:92vh;overflow:auto;border‑radius:16px;padding:20px;box‑sizing:border‑box;pointer‑events:auto"><div id="ownerEditContent"></div></div>';
+ document.body.appendChild(ov);
+ return ov;
+}
+function editOwnerDetails(c,id){
+ if(!adminUnlocked){openAdminLogin();return}
+ const p=ownerFind(c,id);if(!p)return alert('Listing not found.');
+ const d=getOwnerDetails(c,p),today=new Date().toISOString().slice(0,10),ov=ensureOwnerEditOverlay(),box=document.getElementById('ownerEditContent');
+ box.innerHTML='<h2 style="margin‑top:0">👤 Listing Owner Information</h2><div class="admin‑note">Owner Database No.: <b>'+esc(ownerDatabaseNo(c,p))+'</b><br>Listing Reference No.: <b>'+esc(getRef(p)||'')+'</b> · '+esc(getName(p))+'</div><div class="formgrid"><div class="formfield"><label>Owner Name</label><input id="oeName" value="'+escAttr(d.name||'')+'" autocomplete="off"></div><div class="formfield"><label>Owner Company</label><input id="oeCompany" value="'+escAttr(d.company||'')+'" autocomplete="off"></div><div class="formfield"><label>WhatsApp / Phone</label><input id="oePhone" value="'+escAttr(d.phone||'')+'" autocomplete="off"></div><div class="formfield"><label>Email</label><input id="oeEmail" value="'+escAttr(d.email||'')+'" autocomplete="off"></div><div class="formfield"><label>Interaction Date</label><input id="oeDate" type="date" value="'+escAttr(d.date||today)+'"></div><div class="formfield"><label>Status</label><select id="oeStatus"><option>Enquiry</option><option>Listing</option><option>Viewing</option><option>Offer</option><option>Closed</option><option>Not Proceeding</option></select></div><div class="formfield full"><label>Owner Request / Remarks</label><textarea id="oeRemarks">'+esc(d.remarks||'')+'</textarea></div></div><div class="actions"><button type="button" class="btn" data‑owner‑overlay‑save>💾 Update Owner Information</button><button type="button" class="btn light" data‑owner‑overlay‑close>Cancel</button></div>';
+ const st=document.getElementById('oeStatus');if(st)st.value=d.status||'Enquiry';
+ ov.dataset.ownerC=String(c);ov.dataset.ownerId=String(id);ov.style.display='flex';ov.style.pointerEvents='auto';
+}
+async function saveOwnerDetails(c,id){
+ const ov=document.getElementById('ownerEditOverlay');
+ if(!ov)return;
+ const d={name:String(document.getElementById('oeName')?.value||'').trim(),company:String(document.getElementById('oeCompany')?.value||'').trim(),phone:String(document.getElementById('oePhone')?.value||'').trim(),email:String(document.getElementById('oeEmail')?.value||'').trim(),date:String(document.getElementById('oeDate')?.value||'').trim(),status:String(document.getElementById('oeStatus')?.value||'Enquiry').trim(),remarks:String(document.getElementById('oeRemarks')?.value||'').trim()};
+ try{const p=ownerFind(c,id);if(!p)throw new Error("Listing not found");
+ const key=listingKey(c,p);
+ listingMeta[key]=Object.assign({},listingMeta[key],{ownerNo:key,listingKey:key,listingReference:String(getRef(p)||'').trim(),listingType:String(c||''),ownerDetails:d,ownerName:d.name||'',updatedAt:new Date().toISOString()});
+ saveAgentDB();
+ setSyncStatus('💾 Owner information saved · syncing to Supabase…',true);
+ await syncOwnerCloud(c,p,d);
+ const verify=await supabaseRequest(SUPABASE_CRM_TABLE+'?select=*&id=eq.'+encodeURIComponent('listing_owner::'+key));
+ if(!Array.isArray(verify)||verify.length!==1) throw new Error("Cloud verify failed");
+ ov.style.display='none';ov.style.pointerEvents='none';renderCategory(c);const ref=getRef(p),results=document.getElementById(c+'Results');if(results&&ref){const dd=[...results.querySelectorAll('details')].find(x=>{const t=x.querySelector('.property‑title');return t&&t.textContent.indexOf(String(ref))===0});if(dd)dd.open=true;}alert('✅ Owner Information updated successfully and verified.');}catch(e){alert('Owner update failed.\n\n'+e.message)}
+}
+function closeOwnerEditOverlay(){const ov=document.getElementById('ownerEditOverlay');if(ov){ov.style.display='none';ov.style.pointerEvents='none'}}
+function viewOwnerDetails(c,id){editOwnerDetails(c,id)}
+function setListingOwner(c,id,value){const p=(database[c]||[]).find(x=>String(x._id)===String(id));if(!p)return;const d=getOwnerDetails(c,p);d.name=String(value||'').trim();listingMeta[listingKey(c,p)]=Object.assign({},listingMeta[listingKey(c,p)],{ownerDetails:d,ownerName:d.name});saveAgentDB()}
+function openAgentInteraction(c,id){if(!adminUnlocked){openAdminLogin();return}let p=(database[c]||[]).find(x=>String(x._id)===String(id));if(!p)return;let ref=getRef(p)||'', owner=getListingOwner(c,p);document.getElementById('modalbox').innerHTML='<h2>🤝 Agent Interaction</h2><div class="admin‑note">Listing: <b>'+esc(ref)+'</b> · '+esc(getName(p))+'</div><div class="formgrid"><div class="formfield"><label>Owner Name</label><input id="agentOwner" value="'+esc(owner)+'" placeholder="Owner name"></div><div class="formfield"><label>Agent Name</label><input id="agentName" placeholder="Agent who contacted you"></div><div class="formfield"><label>Agent Company</label><input id="agentCompany" placeholder="Agency / Company"></div><div class="formfield"><label>Agent WhatsApp / Phone</label><input id="agentPhone" placeholder="Phone"></div><div class="formfield"><label>Interaction Date</label><input id="agentDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div><div class="formfield"><label>Status</label><select id="agentStatus"><option>Enquiry</option><option>Co‑broke</option><option>Viewing</option><option>Offer</option><option>Closed</option><option>Not Proceeding</option></select></div><div class="formfield full"><label>Agent Request / Remarks</label><textarea id="agentNotes" placeholder="What did the agent ask? Which buyer? Offer? Follow‑up?"></textarea></div></div><div class="actions"><button type="button" class="btn" onclick="saveAgentInteraction('+JSON.stringify(c)+','+JSON.stringify(id)+')">💾 Save Interaction</button><button type="button" class="btn light" onclick="closeModal()">Cancel</button></div>';document.getElementById('modal').classList.add('show')}
+async function saveAgentInteraction(c,id){if(!adminUnlocked)return;let p=(database[c]||[]).find(x=>String(x._id)===String(id));if(!p)return;let ref=getRef(p)||'',owner=(document.getElementById('agentOwner').value||'').trim(),agent=(document.getElementById('agentName').value||'').trim();if(owner){listingMeta[listingKey(c,p)]=Object.assign({},listingMeta[listingKey(c,p)],{ownerName:owner})}const record={id:Date.now(),date:document.getElementById('agentDate').value||new Date().toISOString().slice(0,10),listingType:c,listingId:String(id),reference:ref,propertyName:getName(p),ownerName:owner,agentName:agent,agentCompany:document.getElementById('agentCompany').value.trim(),agentPhone:document.getElementById('agentPhone').value.trim(),status:document.getElementById('agentStatus').value,notes:document.getElementById('agentNotes').value.trim()};agentInteractions.unshift(record);saveAgentDB();try{await syncAgentCloud(record);setSyncStatus('☁️ Agent interaction saved to Supabase',true);closeModal();showAgentDatabase()}catch(e){alert('Agent Interaction saved locally but Supabase sync failed.\n\n'+e.message+'\n\nRun CRM Cloud Setup SQL once, then save again.')}}
+function confirmDeleteAction(label,detail){return confirm('⚠️ Confirm Delete\n\nDelete '+label+'?'+(detail?'\n\n'+detail:'')+'\n\nThis action cannot be undone.')}
+function deleteAgentInteraction(id){if(!adminUnlocked){openAdminLogin();return}if(!confirmDeleteAction('this Agent Interaction'))return;agentInteractions=agentInteractions.filter(x=>String(x.id)!==String(id));saveAgentDB();deleteCRMRecord('agent_interaction',id).catch(e=>console.warn('Agent cloud delete failed',e));renderAgentDatabaseInto(document.getElementById('agentDatabaseTop'));renderAgentDatabaseInto(document.getElementById('agentDatabase'))}
+function openManualAgentForm(){
+ const el=document.getElementById('manualAgentFormTop'); if(!el)return;
+ el.innerHTML='<div class="dashboard" style="margin:12px 0"><h3 style="margin‑top:0">➕ Record Agent Interaction Manually</h3><div class="formgrid">'+
+ '<div class="formfield"><label>Agent Name</label><input id="manualAgentName" placeholder="Agent name"></div>'+ 
+ '<div class="formfield"><label>Agent Company</label><input id="manualAgentCompany" placeholder="Agency / Company"></div>'+ 
+ '<div class="formfield"><label>Agent WhatsApp / Phone</label><input id="manualAgentPhone" placeholder="Phone"></div>'+ 
+ '<div class="formfield"><label>Interaction Date</label><input id="manualAgentDate" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>'+ 
+ '<div class="formfield"><label>Listing Reference</label><input id="manualAgentRef" placeholder="e.g. JB001"></div>'+ 
+ '<div class="formfield"><label>Property Name</label><input id="manualAgentProperty" placeholder="Property / project name"></div>'+ 
+ '<div class="formfield"><label>Owner Name</label><input id="manualAgentOwner" placeholder="Owner name"></div>'+ 
+ '<div class="formfield"><label>Listing Type</label><select id="manualAgentType"><option value="land">Land</option><option value="commercial">Commercial</option><option value="factory">Factory</option><option value="house">House</option></select></div>'+ 
+ '<div class="formfield"><label>Status</label><select id="manualAgentStatus"><option>Enquiry</option><option>Co‑broke</option><option>Viewing</option><option>Offer</option><option>Closed</option><option>Not Proceeding</option></select></div>'+ 
+ '<div class="formfield"><label>Commission Amount</label><input id="manualAgentCommissionAmount" placeholder="RM 0.00"></div>'+ 
+ '<div class="formfield"><label>Commission Received Amount</label><input id="manualAgentCommissionReceivedAmount" placeholder="RM 0.00"></div>'+ 
+ '<div class="formfield"><label>Commission Received</label><select id="manualAgentCommissionReceived"><option>No</option><option>Yes</option></select></div>'+ 
+ '<div class="formfield"><label>Commission Received Date</label><input id="manualAgentCommissionReceivedDate" type="date"></div>'+ 
+ '<div class="formfield full"><label>Agent Request / Remarks</label><textarea id="manualAgentNotes" placeholder="Buyer requirement, offer, viewing, follow‑up, owner discussion, etc."></textarea></div></div>'+ 
+ '<div class="actions"><button type="button" class="btn" onclick="saveManualAgentInteraction()">💾 Save Agent Record</button><button type="button" class="btn light" onclick="document.getElementById(\'manualAgentFormTop\').innerHTML=\'\'">Cancel</button></div></div>';
+}
+function saveManualAgentInteraction(){
+ if(!adminUnlocked){openAdminLogin();return}
+ const agent=(document.getElementById('manualAgentName')?.value||'').trim();
+ const ref=(document.getElementById('manualAgentRef')?.value||'').trim();
+ if(!agent&&!ref){alert('Please enter at least Agent Name or Listing Reference.');return}
+ agentInteractions.unshift({id:Date.now(),date:document.getElementById('manualAgentDate')?.value||new Date().toISOString().slice(0,10),listingType:document.getElementById('manualAgentType')?.value||'',listingId:'manual',reference:ref,propertyName:(document.getElementById('manualAgentProperty')?.value||'').trim(),ownerName:(document.getElementById('manualAgentOwner')?.value||'').trim(),agentName:agent,agentCompany:(document.getElementById('manualAgentCompany')?.value||'').trim(),agentPhone:(document.getElementById('manualAgentPhone')?.value||'').trim(),status:document.getElementById('manualAgentStatus')?.value||'Enquiry',notes:(document.getElementById('manualAgentNotes')?.value||'').trim(),commissionAmount:(document.getElementById('manualAgentCommissionAmount')?.value||'').trim(),commissionReceivedAmount:(document.getElementById('manualAgentCommissionReceivedAmount')?.value||'').trim(),commissionReceived:document.getElementById('manualAgentCommissionReceived')?.value||'No',commissionReceivedDate:document.getElementById('manualAgentCommissionReceivedDate')?.value||''});
+ saveAgentDB();
+ const f=document.getElementById('manualAgentFormTop');if(f)f.innerHTML='';
+ renderAgentDatabaseInto(document.getElementById('agentDatabaseTop'));
+ alert('✅ Agent interaction saved.');
+}
+function renderAgentDatabaseInto(el){
+ if(!el)return;
+ let rows=agentInteractions.map(x=>'<div class="agent‑record" data‑agent‑record‑id="'+escAttr(x.id)+'"><div class="agent‑record‑head"><div><b>'+esc(x.agentName||'Unknown Agent')+'</b> <span class="agent‑tag">'+esc(x.status||'Enquiry')+'</span><div class="lease‑meta">'+esc(x.agentCompany||'')+' · '+esc(x.agentPhone||'')+'</div></div><div><b>'+esc(x.date||'')+'</b></div></div><div style="margin‑top:8px">📌 Listing: <b>'+esc(x.reference||'')+'</b> — '+esc(x.propertyName||'')+'<br>👤 Owner: <b>'+esc(x.ownerName||'Not recorded')+'</b><br>📝 '+esc(x.notes||'')+(x.commissionRemark?'<br>💬 Commission Remark: '+esc(x.commissionRemark):'')+(commissionTotalOf(x)>0?'<br>💰 Commission: <b>RM '+commissionTotalOf(x).toLocaleString('en‑MY',{minimumFractionDigits:2})+'</b> · Received RM '+commissionReceivedOf(x).toLocaleString('en‑MY',{minimumFractionDigits:2})+' · Outstanding RM '+commissionOutstandingOf(x).toLocaleString('en‑MY',{minimumFractionDigits:2})+'</b>':'')+'</div><div class="actions" style="margin‑top:8px"><button type="button" class="btn light" data‑agent‑action="view" data‑id="'+escAttr(x.id)+'">👁 View</button><button type="button" class="btn" data‑agent‑action="edit" data‑id="'+escAttr(x.id)+'">✏️ Edit</button><button type="button" class="btn danger" data‑agent‑action="delete" data‑id="'+escAttr(x.id)+'">🗑️ Delete</button></div></div>').join('');
+ el.innerHTML='<div class="agent‑db‑box"><div class="admin‑note">Record every agent you interact with, the listing they are asking about, and which owner the listing belongs to.</div><div class="stats"><div class="stat"><b>'+agentInteractions.length+'</b>Total Interactions</div><div class="stat"><b>'+new Set(agentInteractions.map(x=>String(x.agentName||'').trim().toLowerCase()).filter(Boolean)).size+'</b>Agents</div><div class="stat"><b>'+new Set(agentInteractions.map(x=>String(x.ownerName||'').trim().toLowerCase()).filter(Boolean)).size+'</b>Owners</div><div class="stat"><b>'+new Set(agentInteractions.map(x=>String(x.reference||'').trim().toLowerCase()).filter(Boolean)).size+'</b>Listings</div></div>'+(rows||'<div class="no‑data">No agent interactions recorded yet.</div>')+'</div>';
+}
+function showAgentDatabase(){
+ if(!adminUnlocked){openAdminLogin();return}
+ showAdminView();
+ let l=document.getElementById('crmLeasePanelTop'),a=document.getElementById('crmAgentPanelTop'),c=document.getElementById('crmLeadPanelTop'),w=document.getElementById('adminSearchPage');
+ if(l)l.style.display='none'; if(c)c.style.display='none'; if(w)w.style.display='none'; if(a)a.style.display='block';
+ renderAgentDatabaseInto(document.getElementById('agentDatabaseTop'));
+ a&&a.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+const ADMIN_SESSION_KEY='EvelynPropertyHub_SupabaseSession';
+let adminUnlocked=false;
+let authSession=null;
+function storeGet(k){try{return localStorage.getItem(k)}catch(e){return Object.prototype.hasOwnProperty.call(memoryStore,k)?memoryStore[k]:null}}
+function storeSet(k,v){try{localStorage.setItem(k,String(v))}catch(e){memoryStore[k]=String(v)}}
+function storeRemove(k){try{localStorage.removeItem(k)}catch(e){delete memoryStore[k]}}
+function getAuthAccessTokenSync(){return authSession&&authSession.access_token?authSession.access_token:''}
+function authHeaders(extra={}){return {apikey:SUPABASE_KEY,Authorization:'Bearer '+(getAuthAccessTokenSync()||SUPABASE_KEY),...extra}}
+async function supaAuth(path,body,method='POST'){
+ const res=await fetch(SUPABASE_URL+'/auth/v1/'+path,{method,headers:{apikey:SUPABASE_KEY,'Content‑Type':'application/json'},body:body?JSON.stringify(body):undefined});
+ const txt=await res.text();let data=null;try{data=txt?JSON.parse(txt):null}catch(e){data={error:txt}}
+ if(!res.ok)throw new Error(data?.msg||data?.message||data?.error_description||data?.error||('Supabase Auth '+res.status));return data;
+}
