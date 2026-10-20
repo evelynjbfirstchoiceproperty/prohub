@@ -3484,42 +3484,51 @@ function ephCommissionDashboardStats(){
 function ephScheduleStoryExpiry(){try{clearTimeout(window.__ephStoryExpiryTimer);const items=typeof ephGetStories==='function'?ephGetStories():[];if(!items.length)return;const next=Math.max(1000,Math.min(...items.map(x=>Number(x.createdAt||0)+86400000).filter(Boolean))-Date.now()+100);window.__ephStoryExpiryTimer=setTimeout(()=>{try{if(typeof ephGetStories==='function')ephGetStories();if(typeof ephRenderPublicStories==='function')ephRenderPublicStories();if(typeof currentPage!=='undefined'&&currentPage==='stories'&&typeof render==='function')render();}finally{ephScheduleStoryExpiry();}},next);}catch(e){}}
 window.addEventListener('load',()=>ephScheduleStoryExpiry());
 </script>
-
-<style id="eph-mobile-chrome-tap-fix">
-/* Mobile Chrome/Safari tap compatibility; keep existing black-gold layout unchanged. */
-html,body{ -webkit-tap-highlight-color: transparent; }
-button,[role="button"],a,.btn,input,select,textarea,label{touch-action:manipulation;}
-button,[role="button"],a,.btn{ -webkit-user-select:none; user-select:none; }
+<style id="eph-mobile-chrome-interaction-fix">
+/* Keep the existing design. Make native controls reliable on touch browsers. */
+html,body{-webkit-tap-highlight-color:transparent;}
+button,a,.btn,[role="button"],input,select,textarea,label{touch-action:manipulation;}
+button,a,.btn,[role="button"]{-webkit-user-select:none;user-select:none;}
 @media (hover:none) and (pointer:coarse){
-  button,a,.btn,[role="button"],input,select,textarea{pointer-events:auto;}
-  button,a,.btn,[role="button"]{cursor:pointer;}
+ button,a,.btn,[role="button"],input,select,textarea,label{pointer-events:auto;}
 }
 </style>
-<script id="eph-mobile-chrome-tap-compat">
+<script id="eph-mobile-chrome-interaction-fix-js">
 (function(){
-  if(window.__ephMobileTapCompatInstalled)return;window.__ephMobileTapCompatInstalled=true;
-  var pending=null, nativeClickAt=0, suppressUntil=0;
-  function targetOf(t){return t&&t.closest?t.closest('button,a,[role="button"],.btn,[onclick],input[type="button"],input[type="submit"],label'):null;}
-  document.addEventListener('click',function(e){
-    if(e.__ephTapFallback)return;nativeClickAt=Date.now();
-    if(pending&&targetOf(e.target)===pending.target){clearTimeout(pending.timer);pending=null;}
-    if(Date.now()<suppressUntil && targetOf(e.target)===window.__ephLastFallbackTarget){e.preventDefault();e.stopImmediatePropagation();}
-  },true);
-  document.addEventListener('touchend',function(e){
-    if(!e.changedTouches||e.changedTouches.length!==1)return;
-    var target=targetOf(e.target);if(!target||target.disabled||target.getAttribute('aria-disabled')==='true')return;
-    if(pending){clearTimeout(pending.timer);pending=null;}
-    var stamp=nativeClickAt;
-    pending={target:target,timer:setTimeout(function(){
-      var p=pending;pending=null;if(!p||p.target!==target||nativeClickAt!==stamp)return;
-      if(!document.documentElement.contains(target))return;
-      var r=target.getBoundingClientRect();if(r.width<=0||r.height<=0)return;
-      window.__ephLastFallbackTarget=target;suppressUntil=Date.now()+700;
-      var ev;try{ev=new MouseEvent('click',{bubbles:true,cancelable:true,view:window});}catch(err){return;}
-      ev.__ephTapFallback=true;target.dispatchEvent(ev);
-    },450)};
-  },{capture:true,passive:true});
-  document.addEventListener('touchcancel',function(){if(pending){clearTimeout(pending.timer);pending=null;}},{capture:true,passive:true});
+ 'use strict';
+ if(window.__ephMobileChromeInteractionFix)return;
+ window.__ephMobileChromeInteractionFix=true;
+ var lastNativeClick=0,lastFallbackTarget=null,lastFallbackAt=0,pending=null;
+ function elementFromEventTarget(t){if(!t)return null;if(t.nodeType===3)t=t.parentElement;return t&&t.closest?t.closest('button,a,[role="button"],.btn,input[type="button"],input[type="submit"],label,[onclick]'):null;}
+ function isUsable(el){if(!el||!document.documentElement.contains(el))return false;if(el.disabled||el.getAttribute('aria-disabled')==='true')return false;var r=el.getBoundingClientRect();if(r.width<1||r.height<1)return false;var cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&cs.pointerEvents!=='none';}
+ document.addEventListener('click',function(e){
+   var el=elementFromEventTarget(e.target); if(!el)return;
+   if(e.__ephMobileFallback)return;
+   lastNativeClick=Date.now();
+   if(pending&&pending.el===el){clearTimeout(pending.timer);pending=null;}
+   /* Prevent the delayed browser-generated click from submitting twice after fallback. */
+   if(lastFallbackTarget===el&&Date.now()-lastFallbackAt<900){e.preventDefault();e.stopImmediatePropagation();lastFallbackTarget=null;}
+ },true);
+ function queueFallback(event){
+   if(!event||!event.changedTouches||event.changedTouches.length!==1)return;
+   var touch=event.changedTouches[0],el=elementFromEventTarget(event.target);
+   if(!isUsable(el))return;
+   if(pending){clearTimeout(pending.timer);pending=null;}
+   var clickStamp=lastNativeClick;
+   pending={el:el,timer:setTimeout(function(){
+     var p=pending;pending=null;
+     if(!p||p.el!==el||lastNativeClick!==clickStamp||!isUsable(el))return;
+     /* Only synthesize when the finger ended on the same live control. */
+     var hit=document.elementFromPoint(touch.clientX,touch.clientY);
+     if(hit&&hit!==el&&!el.contains(hit)&&!hit.contains(el))return;
+     lastFallbackTarget=el;lastFallbackAt=Date.now();
+     var ev;try{ev=new MouseEvent('click',{bubbles:true,cancelable:true,view:window});}catch(_){return;}
+     try{Object.defineProperty(ev,'__ephMobileFallback',{value:true});}catch(_){ev.__ephMobileFallback=true;}
+     el.dispatchEvent(ev);
+   },420)};
+ }
+ document.addEventListener('touchend',queueFallback,{capture:true,passive:true});
+ document.addEventListener('touchcancel',function(){if(pending){clearTimeout(pending.timer);pending=null;}},{capture:true,passive:true});
 })();
 </script>
 </body></html>
