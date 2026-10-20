@@ -4391,37 +4391,8 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
   if (window.__ephMobileChromeRepairInstalled) return;
   window.__ephMobileChromeRepairInstalled = true;
 
-  // Keep Drive image URLs usable in mobile Chrome/Safari. Some Drive preview URLs
-  // return an HTML preview instead of image bytes on mobile; use the thumbnail endpoint.
-  function ephDriveImageUrl(raw){
-    var value=String(raw||'').trim();
-    if(!value) return value;
-    if(!/drive\.google\.com\/(?:file\/d\/|uc\?|thumbnail\?|open\?)/i.test(value)) return value;
-    var id='';
-    var m=value.match(/\/file\/d\/([\w-]+)/i) || value.match(/[?&]id=([\w-]+)/i);
-    if(m) id=m[1];
-    if(!id) return value;
-    return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200';
-  }
-  // Normalize returned Drive photo URLs before rendering them into <img> tags.
-  var oldLoadPhotos=window.ephLoadDrivePhotos;
-  if(typeof oldLoadPhotos==='function'){
-    window.ephLoadDrivePhotos=function(folderUrl){
-      return Promise.resolve(oldLoadPhotos(folderUrl)).then(function(list){
-        return (Array.isArray(list)?list:[]).map(ephDriveImageUrl);
-      });
-    };
-  }
-  // Also normalize any already-rendered images and retry failed Drive images once.
-  document.addEventListener('error',function(ev){
-    var img=ev.target;
-    if(!img || img.tagName!=='IMG' || img.dataset.ephDriveFallbackTried==='1') return;
-    var next=ephDriveImageUrl(img.currentSrc||img.src||'');
-    if(next && next !== (img.currentSrc||img.src)){
-      img.dataset.ephDriveFallbackTried='1';
-      img.src=next;
-    }
-  },true);
+  // Keep the original Google Drive image URLs unchanged. Rewriting Drive URLs
+  // to the thumbnail endpoint can make publicly shared images fail on some devices.
 
   // Android Chrome can occasionally miss the synthetic click following a touch.
   // Schedule a single fallback click; cancel it immediately if a normal click arrives.
@@ -4456,70 +4427,21 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
 })();
 </script>
 
-<script id="eph-progressive-drive-photo-loading">
+<script id="eph-safe-first-photos-priority">
 (function(){
-  'use strict';
-  if(window.__ephProgressivePhotoLoadingInstalled) return;
-  window.__ephProgressivePhotoLoadingInstalled=true;
-  var active=new Set();
-  var completed=new Set();
-  var running=false;
-  var queuedItems=[];
-  var batchSize=4;
-  function folderKey(x){
-    try{return typeof window.ephExtractDriveFolderId==='function' ? window.ephExtractDriveFolderId(x.photoFolder) : String(x.photoFolder||'');}catch(e){return String(x.photoFolder||'');}
-  }
-  function hasPhotos(x){return Array.isArray(x.photos)&&x.photos.length>=5;}
-  function priority(items){
-    var out=[],seen=new Set();
-    function add(x){if(!x||!x.photoFolder||hasPhotos(x))return;var k=folderKey(x);if(!k||seen.has(k))return;seen.add(k);out.push(x);}
-    var featured=['publicListingCards','directOwnerListingCards','cobrokeListingCards'];
-    featured.forEach(function(id){var host=document.getElementById(id);if(!host)return;host.querySelectorAll('.eph-public-card').forEach(function(card){var key=card.querySelector('.eph-view-property')?.getAttribute('onclick')||'';var m=key.match(/ephOpenPublicListing\('([^']+)'/);if(m){var found=items.find(function(x){return String(x._key)===m[1];});add(found);}});});
-    // Ensure the first visible listing in each source/category is prioritized even before DOM paint.
-    ['direct','cobroke'].forEach(function(source){['LAND','COMMERCIAL','FACTORY','HOUSE'].forEach(function(cat){add(items.find(function(x){return x.source===source&&x.cat===cat&&x.photoFolder&&!hasPhotos(x);}));});});
-    items.forEach(add);
-    return out;
-  }
-  function refresh(){try{if(typeof window.ephRenderAllPublicListingGroups==='function')window.ephRenderAllPublicListingGroups();}catch(e){}}
-  async function process(items){
-    if(running){queuedItems=items;return;}
-    running=true;
+  function prioritizeVisiblePhotos(){
     try{
-      var list=priority(items);
-      for(var i=0;i<list.length;i+=batchSize){
-        var batch=list.slice(i,i+batchSize).filter(function(x){var k=folderKey(x);return k&&!completed.has(k)&&!active.has(k);});
-        if(!batch.length)continue;
-        batch.forEach(function(x){active.add(folderKey(x));});
-        await Promise.all(batch.map(async function(x){
-          var k=folderKey(x);
-          try{
-            var urls=typeof window.ephLoadDrivePhotos==='function'?await window.ephLoadDrivePhotos(x.photoFolder):[];
-            if(Array.isArray(urls)&&urls.length){
-              var merged=[],prior=Array.isArray(x.photos)?x.photos.filter(Boolean):[];
-              [urls,prior,[x.photo||'']].forEach(function(group){group.forEach(function(u){if(u&&!merged.includes(u)&&merged.length<5)merged.push(u);});});
-              x.photos=merged;if(merged[0])x.photo=merged[0];
-            }
-          }catch(e){}
-          finally{active.delete(k);completed.add(k);}
-        }));
-        // Paint early batches immediately; later images continue in the background.
-        refresh();
-        if(i+batchSize<list.length) await new Promise(function(resolve){setTimeout(resolve,60);});
-      }
-    }finally{
-      running=false;
-      if(queuedItems.length){var next=queuedItems;queuedItems=[];process(next);}
-    }
+      var imgs=Array.from(document.querySelectorAll('#customerView .eph-public-card img, #customerView .eph-photo-strip img'));
+      imgs.forEach(function(img,i){
+        img.decoding='async';
+        if(i<5){img.loading='eager';try{img.fetchPriority='high';}catch(e){}}
+        else if(!img.loading) img.loading='lazy';
+      });
+    }catch(e){}
   }
-  window.ephHydrateDrivePhotos=function(items){return process(Array.isArray(items)?items:[]);};
-  // Images should decode asynchronously and load only when near the viewport, except the first thumbnail.
-  document.addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('.eph-public-card .eph-photo-strip img').forEach(function(img,i){
-      img.loading=i<5?'eager':'lazy';img.decoding='async';
-      if(i<5&&'fetchPriority' in img)img.fetchPriority='high';
-    });
-  },{once:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',prioritizeVisiblePhotos,{once:true});
+  else prioritizeVisiblePhotos();
+  document.addEventListener('click',function(ev){if(ev.target&&ev.target.closest&&ev.target.closest('#customerView'))setTimeout(prioritizeVisiblePhotos,0);},true);
 })();
 </script>
-
 </body></html>
