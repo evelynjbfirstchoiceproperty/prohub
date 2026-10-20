@@ -3484,55 +3484,8 @@ function ephCommissionDashboardStats(){
 function ephScheduleStoryExpiry(){try{clearTimeout(window.__ephStoryExpiryTimer);const items=typeof ephGetStories==='function'?ephGetStories():[];if(!items.length)return;const next=Math.max(1000,Math.min(...items.map(x=>Number(x.createdAt||0)+86400000).filter(Boolean))-Date.now()+100);window.__ephStoryExpiryTimer=setTimeout(()=>{try{if(typeof ephGetStories==='function')ephGetStories();if(typeof ephRenderPublicStories==='function')ephRenderPublicStories();if(typeof currentPage!=='undefined'&&currentPage==='stories'&&typeof render==='function')render();}finally{ephScheduleStoryExpiry();}},next);}catch(e){}}
 window.addEventListener('load',()=>ephScheduleStoryExpiry());
 </script>
-<style id="eph-mobile-chrome-interaction-fix">
-/* Keep the existing design. Make native controls reliable on touch browsers. */
-html,body{-webkit-tap-highlight-color:transparent;}
-button,a,.btn,[role="button"],input,select,textarea,label{touch-action:manipulation;}
-button,a,.btn,[role="button"]{-webkit-user-select:none;user-select:none;}
-@media (hover:none) and (pointer:coarse){
- button,a,.btn,[role="button"],input,select,textarea,label{pointer-events:auto;}
-}
-</style>
-<script id="eph-mobile-chrome-interaction-fix-js">
-(function(){
- 'use strict';
- if(window.__ephMobileChromeInteractionFix)return;
- window.__ephMobileChromeInteractionFix=true;
- var lastNativeClick=0,lastFallbackTarget=null,lastFallbackAt=0,pending=null;
- function elementFromEventTarget(t){if(!t)return null;if(t.nodeType===3)t=t.parentElement;return t&&t.closest?t.closest('button,a,[role="button"],.btn,input[type="button"],input[type="submit"],label,[onclick]'):null;}
- function isUsable(el){if(!el||!document.documentElement.contains(el))return false;if(el.disabled||el.getAttribute('aria-disabled')==='true')return false;var r=el.getBoundingClientRect();if(r.width<1||r.height<1)return false;var cs=getComputedStyle(el);return cs.display!=='none'&&cs.visibility!=='hidden'&&cs.pointerEvents!=='none';}
- document.addEventListener('click',function(e){
-   var el=elementFromEventTarget(e.target); if(!el)return;
-   if(e.__ephMobileFallback)return;
-   lastNativeClick=Date.now();
-   if(pending&&pending.el===el){clearTimeout(pending.timer);pending=null;}
-   /* Prevent the delayed browser-generated click from submitting twice after fallback. */
-   if(lastFallbackTarget===el&&Date.now()-lastFallbackAt<900){e.preventDefault();e.stopImmediatePropagation();lastFallbackTarget=null;}
- },true);
- function queueFallback(event){
-   if(!event||!event.changedTouches||event.changedTouches.length!==1)return;
-   var touch=event.changedTouches[0],el=elementFromEventTarget(event.target);
-   if(!isUsable(el))return;
-   if(pending){clearTimeout(pending.timer);pending=null;}
-   var clickStamp=lastNativeClick;
-   pending={el:el,timer:setTimeout(function(){
-     var p=pending;pending=null;
-     if(!p||p.el!==el||lastNativeClick!==clickStamp||!isUsable(el))return;
-     /* Only synthesize when the finger ended on the same live control. */
-     var hit=document.elementFromPoint(touch.clientX,touch.clientY);
-     if(hit&&hit!==el&&!el.contains(hit)&&!hit.contains(el))return;
-     lastFallbackTarget=el;lastFallbackAt=Date.now();
-     var ev;try{ev=new MouseEvent('click',{bubbles:true,cancelable:true,view:window});}catch(_){return;}
-     try{Object.defineProperty(ev,'__ephMobileFallback',{value:true});}catch(_){ev.__ephMobileFallback=true;}
-     el.dispatchEvent(ev);
-   },420)};
- }
- document.addEventListener('touchend',queueFallback,{capture:true,passive:true});
- document.addEventListener('touchcancel',function(){if(pending){clearTimeout(pending.timer);pending=null;}},{capture:true,passive:true});
-})();
-</script>
-</body></html>
 
+<!-- Mobile compatibility repair: formerly trailing integration scripts -->
 <script id="eph-customer-leads-dedupe-display-20261016">
 (function(){
   'use strict';
@@ -4432,3 +4385,75 @@ button,a,.btn,[role="button"]{-webkit-user-select:none;user-select:none;}
   };
 })();
 </script>
+<script id="eph-mobile-chrome-photo-tap-repair-20261021">
+(function(){
+  'use strict';
+  if (window.__ephMobileChromeRepairInstalled) return;
+  window.__ephMobileChromeRepairInstalled = true;
+
+  // Keep Drive image URLs usable in mobile Chrome/Safari. Some Drive preview URLs
+  // return an HTML preview instead of image bytes on mobile; use the thumbnail endpoint.
+  function ephDriveImageUrl(raw){
+    var value=String(raw||'').trim();
+    if(!value) return value;
+    if(!/drive\.google\.com\/(?:file\/d\/|uc\?|thumbnail\?|open\?)/i.test(value)) return value;
+    var id='';
+    var m=value.match(/\/file\/d\/([\w-]+)/i) || value.match(/[?&]id=([\w-]+)/i);
+    if(m) id=m[1];
+    if(!id) return value;
+    return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200';
+  }
+  // Normalize returned Drive photo URLs before rendering them into <img> tags.
+  var oldLoadPhotos=window.ephLoadDrivePhotos;
+  if(typeof oldLoadPhotos==='function'){
+    window.ephLoadDrivePhotos=function(folderUrl){
+      return Promise.resolve(oldLoadPhotos(folderUrl)).then(function(list){
+        return (Array.isArray(list)?list:[]).map(ephDriveImageUrl);
+      });
+    };
+  }
+  // Also normalize any already-rendered images and retry failed Drive images once.
+  document.addEventListener('error',function(ev){
+    var img=ev.target;
+    if(!img || img.tagName!=='IMG' || img.dataset.ephDriveFallbackTried==='1') return;
+    var next=ephDriveImageUrl(img.currentSrc||img.src||'');
+    if(next && next !== (img.currentSrc||img.src)){
+      img.dataset.ephDriveFallbackTried='1';
+      img.src=next;
+    }
+  },true);
+
+  // Android Chrome can occasionally miss the synthetic click following a touch.
+  // Schedule a single fallback click; cancel it immediately if a normal click arrives.
+  var pending=new WeakMap();
+  document.addEventListener('click',function(ev){
+    var node=ev.target;
+    var control=node&&node.closest?node.closest('#customerView button, #customerView a, #customerView [role="button"]'):null;
+    if(control){var timer=pending.get(control);if(timer){clearTimeout(timer);pending.delete(control);}}
+  },true);
+  document.addEventListener('pointerup',function(ev){
+    if(ev.pointerType==='mouse') return;
+    var node=ev.target;
+    var control=node&&node.closest?node.closest('#customerView button, #customerView a, #customerView [role="button"]'):null;
+    if(!control || control.disabled || control.getAttribute('aria-disabled')==='true') return;
+    if(pending.has(control)) clearTimeout(pending.get(control));
+    var timer=setTimeout(function(){
+      pending.delete(control);
+      if(!control.isConnected || control.disabled) return;
+      // Native anchor navigation must remain native; only retry if it has an action handler.
+      if(control.matches('button, [role="button"]') || control.hasAttribute('onclick') || control.hasAttribute('data-eph-listing-action')){
+        control.click();
+      }
+    },450);
+    pending.set(control,timer);
+  },true);
+
+  // Mobile tap ergonomics for public listing actions without changing desktop layout.
+  var style=document.createElement('style');
+  style.id='eph-mobile-chrome-tap-css';
+  style.textContent='@media(max-width:900px){#customerView button,#customerView a,#customerView [role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}#customerView .eph-list-actions,#customerView .eph-list-actions button,#customerView .eph-photo-strip a,#customerView .eph-view-property{position:relative;z-index:2;pointer-events:auto;cursor:pointer}#customerView .modal-backdrop.show{pointer-events:auto}}';
+  document.head.appendChild(style);
+})();
+</script>
+
+</body></html>
