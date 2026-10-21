@@ -4607,4 +4607,153 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
 })();
 </script>
 
+
+<!-- Mobile photo reliability repair: retry slow Drive bridge responses, never cache empty failures,
+     and hydrate a few folders at a time. This does not change listing data or listing actions. -->
+<script id="eph-mobile-drive-photo-reliability-repair">
+(function(){
+  'use strict';
+  if(window.__ephMobilePhotoReliabilityRepair)return;
+  window.__ephMobilePhotoReliabilityRepair=true;
+
+  const API=String((typeof EPH_DRIVE_PHOTO_API_URL!=='undefined'&&EPH_DRIVE_PHOTO_API_URL)||window.EPH_DRIVE_PHOTO_API_URL||'');
+  const successful=window.__ephDrivePhotoSuccessCache||(window.__ephDrivePhotoSuccessCache=new Map());
+  const pending=window.__ephDrivePhotoPending||(window.__ephDrivePhotoPending=new Map());
+
+  function folderId(value){
+    const s=String(value||'').trim();
+    if(!s||s.indexOf('EPH_PHOTOS_JSON:')===0)return '';
+    let m=s.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]+)/i);
+    if(m)return m[1];
+    m=s.match(/[?&]id=([\w-]+)/i);
+    return m?m[1]:'';
+  }
+  function imageUrl(value){
+    if(typeof value==='object'&&value){
+      value=value.url||value.imageUrl||value.image_url||value.thumbnailLink||value.webContentLink||value.downloadUrl||value.src||'';
+    }
+    let s=String(value||'').trim();
+    if(!s)return '';
+    if(/^https?:\/\/drive\.google\.com\/(?:file\/d\/|open\?|uc\?|thumbnail\/)/i.test(s)){
+      let m=s.match(/drive\.google\.com\/file\/d\/([\w-]+)/i)||s.match(/drive\.google\.com\/thumbnail\/([\w-]+)/i)||s.match(/[?&]id=([\w-]+)/i);
+      if(m)return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(m[1])+'&sz=w1000';
+    }
+    return s;
+  }
+  function normalizeList(list){
+    if(!Array.isArray(list))return [];
+    const out=[];
+    list.forEach(item=>{
+      const u=imageUrl(item);
+      if(u && !out.includes(u))out.push(u);
+    });
+    return out.slice(0,5);
+  }
+  function request(folder,attempt){
+    return new Promise(resolve=>{
+      if(!API){resolve([]);return;}
+      const id=folderId(folder);
+      if(!id){resolve([]);return;}
+      const cb='ephDriveMobileRetry_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+      const script=document.createElement('script');
+      let done=false;
+      const finish=(photos)=>{
+        if(done)return; done=true; clearTimeout(timer);
+        try{delete window[cb];}catch(e){window[cb]=undefined;}
+        if(script.parentNode)script.parentNode.removeChild(script);
+        resolve(normalizeList(photos));
+      };
+      window[cb]=data=>finish(data&&data.ok?data.photos:[]);
+      script.async=true;
+      script.src=API+(API.includes('?')?'&':'?')+'folderId='+encodeURIComponent(id)+'&callback='+encodeURIComponent(cb)+'&ephRetry='+attempt+'&_='+Date.now();
+      script.onerror=()=>finish([]);
+      const timer=setTimeout(()=>finish([]),20000);
+      document.head.appendChild(script);
+    });
+  }
+  async function load(folder){
+    const id=folderId(folder);
+    if(!id)return [];
+    if(successful.has(id))return successful.get(id).slice();
+    if(pending.has(id))return pending.get(id);
+    const task=(async()=>{
+      for(let attempt=0;attempt<3;attempt++){
+        const urls=await request(folder,attempt);
+        if(urls.length){successful.set(id,urls);return urls.slice();}
+        if(attempt<2)await new Promise(r=>setTimeout(r,700*(attempt+1)));
+      }
+      // Crucially, empty/timeout responses are NOT cached, so the next page entry can retry.
+      return [];
+    })().finally(()=>pending.delete(id));
+    pending.set(id,task);
+    return task;
+  }
+  load.__ephMobileReliable=true;
+  window.ephLoadDrivePhotos=load;
+  try{ephLoadDrivePhotos=load;}catch(e){}
+
+  // Handle inline EPH_PHOTOS_JSON payloads and objects as well as URL strings.
+  function inlinePhotos(item){
+    let list=Array.isArray(item.photos)?item.photos:[];
+    const raw=String(item.photoFolder||'');
+    if(raw.indexOf('EPH_PHOTOS_JSON:')===0){
+      try{
+        const data=JSON.parse(raw.slice('EPH_PHOTOS_JSON:'.length));
+        if(Array.isArray(data))list=list.concat(data);
+        else if(data&&Array.isArray(data.photos))list=list.concat(data.photos);
+      }catch(e){}
+    }
+    if(item.photo)list.push(item.photo);
+    return normalizeList(list);
+  }
+  async function hydrate(items){
+    const rows=(items||[]).filter(x=>x&&typeof x==='object');
+    let cursor=0;
+    const workers=Array.from({length:Math.min(3,rows.length)},async()=>{
+      while(cursor<rows.length){
+        const item=rows[cursor++];
+        const local=inlinePhotos(item);
+        if(local.length){
+          item.photos=local;
+          if(!item.photo)item.photo=local[0];
+          if(typeof window.ephRenderAllPublicListingGroups==='function')window.ephRenderAllPublicListingGroups();
+        }
+        if(!folderId(item.photoFolder)||item._ephMobilePhotoTried)continue;
+        item._ephMobilePhotoTried=true;
+        try{
+          const urls=await load(item.photoFolder);
+          const merged=normalizeList([...(Array.isArray(item.photos)?item.photos:[]),...urls,item.photo||'']);
+          if(merged.length){
+            item.photos=merged;
+            item.photo=merged[0];
+            if(typeof window.ephRenderAllPublicListingGroups==='function')window.ephRenderAllPublicListingGroups();
+          }else{
+            // Permit a later manual refresh/page entry to try again.
+            item._ephMobilePhotoTried=false;
+          }
+        }catch(e){
+          item._ephMobilePhotoTried=false;
+          console.warn('Mobile photo load will be retried later:',e);
+        }
+      }
+    });
+    await Promise.all(workers);
+  }
+  hydrate.__ephMobileReliable=true;
+  window.ephHydrateDrivePhotos=hydrate;
+  try{ephHydrateDrivePhotos=hydrate;}catch(e){}
+
+  // Retry only after a real user refresh or returning to the page; don't hammer Drive continuously.
+  function start(){
+    try{
+      const rows=(typeof ephPublicAllListings!=='undefined'&&Array.isArray(ephPublicAllListings))?ephPublicAllListings:window.ephPublicAllListings;
+      if(Array.isArray(rows)&&rows.length)hydrate(rows);
+    }catch(e){console.warn('Mobile photo repair could not start:',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else setTimeout(start,250);
+  window.addEventListener('pageshow',function(){setTimeout(start,300);});
+})();
+</script>
+
 </body></html>
