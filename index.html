@@ -763,7 +763,7 @@ let ephPublicAllListings=[],ephPublicExpanded={featured:false,direct:false,cobro
 const ephPublicOpenRows=new Set(),ephPublicOpenExtra={direct:new Set(),cobroke:new Set(),manual:new Set()};
 function ephNormCat(x){x=String(x||'').toLowerCase();if(x.includes('commercial'))return 'COMMERCIAL';if(x.includes('factory')||x.includes('industrial'))return 'FACTORY';if(x.includes('land'))return 'LAND';if(x.includes('house')||x.includes('residential'))return 'HOUSE';return x.toUpperCase();}
 function ephDriveUrl(x){const s=String(x||'').trim();return /^https?:\/\//i.test(s)&&!s.startsWith('EPH_PHOTOS_JSON:')?s:'';}
-function ephPublicCard(x){const imgs=(x.photos||[]).filter(u=>typeof u==='string'&&u.trim()).slice(0,5);if(!imgs.length&&x.photo)imgs.push(x.photo);const folder=ephDriveUrl(x.photoFolder);const imageStrip=`<div class="eph-photo-strip">${Array.from({length:5},(_,i)=>{const u=imgs[i];return u?`<a href="${escapePublic(u)}" target="_blank" rel="noopener" title="Open photo ${i+1}"><img src="${escapePublic(u)}" alt="Property photo ${i+1}" loading="${i===0?'eager':'lazy'}" decoding="async" fetchpriority="${i===0?'high':'low'}"></a>`:`<div class="eph-photo-placeholder" aria-label="Property photo ${i+1} loading">${x.photoFolder?'Loading photo '+(i+1):'No photo '+(i+1)}</div>`;}).join('')}</div>`;return `<article class="public-card eph-public-card"><div class="public-card-art" ${imgs[0]?`style="background-image:url('${escapePublic(imgs[0])}');background-size:cover;background-position:center"`:''}>${imgs.length?'':'⌂'}</div><div class="public-card-body"><small>${escapePublic(x.cat)} · ${x.source==='manual'||x.source==='cobroke'?'LISTING':'DIRECT OWNER'}</small><strong>${escapePublic(x.name)}</strong><p>${escapePublic([x.ref,x.location,x.size].filter(Boolean).join(' · '))}</p><div class="public-price">${escapePublic(String(x.price).match(/^RM/i)?String(x.price):'RM '+x.price)}</div>${imageStrip}${folder?`<p class="eph-drive-link"><a href="${escapePublic(folder)}" target="_blank" rel="noopener">Google Drive Photo Folder ↗</a></p>`:''}<button class="btn small eph-view-property" onclick="ephOpenPublicListing('${escapePublic(x._key)}')">View Details</button></div></article>`;}
+function ephPublicCard(x){const imgs=(x.photos||[]).filter(u=>typeof u==='string'&&u.trim()).slice(0,5);if(!imgs.length&&x.photo)imgs.push(x.photo);const folder=ephDriveUrl(x.photoFolder);const imageStrip=`<div class="eph-photo-strip">${Array.from({length:5},(_,i)=>{const u=imgs[i];return u?`<a href="${escapePublic(u)}" target="_blank" rel="noopener" title="Open photo ${i+1}"><img src="${escapePublic(u)}" alt="Property photo ${i+1}" loading="lazy" decoding="async" fetchpriority="low"></a>`:`<div class="eph-photo-placeholder" aria-label="Property photo ${i+1} loading">${x.photoFolder?'Loading photo '+(i+1):'No photo '+(i+1)}</div>`;}).join('')}</div>`;return `<article class="public-card eph-public-card"><div class="public-card-art" ${imgs[0]?`style="background-image:url('${escapePublic(imgs[0])}');background-size:cover;background-position:center"`:''}>${imgs.length?'':'⌂'}</div><div class="public-card-body"><small>${escapePublic(x.cat)} · ${x.source==='manual'||x.source==='cobroke'?'LISTING':'DIRECT OWNER'}</small><strong>${escapePublic(x.name)}</strong><p>${escapePublic([x.ref,x.location,x.size].filter(Boolean).join(' · '))}</p><div class="public-price">${escapePublic(String(x.price).match(/^RM/i)?String(x.price):'RM '+x.price)}</div>${imageStrip}${folder?`<p class="eph-drive-link"><a href="${escapePublic(folder)}" target="_blank" rel="noopener">Google Drive Photo Folder ↗</a></p>`:''}<button class="btn small eph-view-property" onclick="ephOpenPublicListing('${escapePublic(x._key)}')">View Details</button></div></article>`;}
 function ephRenderListingGroup(id,items,group){const el=document.getElementById(id);if(!el)return;const expanded=!!ephPublicExpanded[group];el.innerHTML=items.length?items.map(ephPublicCard).join(''):'<div class="empty"><strong>No available listings</strong></div>';const old=document.getElementById(id+'More');if(old)old.remove();if(items.length>4){const b=document.createElement('button');b.id=id+'More';b.className='btn small eph-more-btn';b.textContent=expanded?'Show Less ↑':'View All Listings ('+items.length+') →';b.onclick=()=>{ephPublicExpanded[group]=!ephPublicExpanded[group];ephRenderAllPublicListingGroups();};el.insertAdjacentElement('afterend',b);}}
 function ephRenderAllPublicListingGroups(){const q=(document.getElementById('publicListingSearch')?.value||'').trim().toLowerCase();const filtered=ephPublicAllListings.filter(x=>!q||[x.name,x.ref,x.location,x.cat,x.source,x.size].join(' ').toLowerCase().includes(q));const top=[];for(const cat of EPH_PUBLIC_CAT_ORDER){const x=filtered.find(y=>y.cat===cat);if(x)top.push(x);}const featured=ephPublicExpanded.featured?filtered:top;ephRenderListingGroup('publicListingCards',featured,'featured');for(const [id,group,pool] of [['directOwnerListingCards','direct',filtered.filter(x=>x.source==='direct')],['cobrokeListingCards','manual',filtered.filter(x=>x.source==='manual'||x.source==='cobroke')]]){const picks=[];for(const cat of EPH_PUBLIC_CAT_ORDER){const x=pool.find(y=>y.cat===cat);if(x)picks.push(x);}ephRenderListingGroup(id,ephPublicExpanded[group]?pool:picks,group);}}
 loadPublicListings=async function(){const cats=[['commercial_listings','COMMERCIAL'],['factory_listings','FACTORY'],['land_listings','LAND'],['house_listings','HOUSE']];const found=[];const syncErrors=[];await Promise.all(cats.map(async ([table,cat])=>{try{const r=await fetch(EPH_SUPABASE_URL+'/rest/v1/'+table+'?select=*&limit=2000',{headers:{apikey:EPH_SUPABASE_KEY,Authorization:'Bearer '+EPH_SUPABASE_KEY}});if(!r.ok){syncErrors.push(table+' HTTP '+r.status+' '+(await r.text()).slice(0,120));return;}for(const row of await r.json()){const get=(...keys)=>{for(const k of keys)if(row[k]!=null&&row[k]!=='')return row[k];return ''};const status=String(get('status','Status')||'Available').toLowerCase();if(/not available|sold|rented|withdrawn|unavailable|reserved/.test(status))continue;const rawSource=String(get('source','listing_source','Source','Listing Source')||'Direct Owner').trim().toLowerCase();const rawRef=String(get('reference_number','reference','ref','listing_reference','Reference Number')||'').trim();const legacyManualRef=/^(CL|CC|CF|CH)\d+$/i.test(rawRef);const source=/manual/.test(rawSource)||legacyManualRef?'manual':/co.?broke/.test(rawSource)?'cobroke':'direct';const rawPf=String(get('photo_folder','photo_folder_url','Photo Folder')||'');const pf=rawPf.startsWith('EPH_PHOTOS_JSON:')?String(get('photo_folder_url','Photo Folder URL','drive_folder_url')||rawPf):rawPf;let photos=[];let decodedFolder=pf;if(pf.startsWith('EPH_PHOTOS_JSON:')){try{const parsed=JSON.parse(pf.slice(16));if(Array.isArray(parsed))photos=parsed;else if(parsed&&typeof parsed==='object'){photos=Array.isArray(parsed.photos)?parsed.photos:[];decodedFolder=String(parsed.folder||get('photo_folder_url','Photo Folder URL','drive_folder_url')||'');}}catch(e){}}else photos=[get('photo_1','photo1','image_1'),get('photo_2','photo2','image_2'),get('photo_3','photo3','image_3'),get('photo_4','photo4','image_4'),get('photo_5','photo5','image_5')].filter(Boolean);const x={_key:table+'-'+String(row.id??get('reference_number','reference','ref','listing_reference')??found.length),_table:table,_id:row.id,cat,ref:get('reference_number','reference','ref','listing_reference','Reference Number')||'Property listing',name:get('name','property_name','title','Name')||'Property Opportunity',location:[get('area','Area'),get('state','State')].filter(Boolean).join(', '),size:get('land_size','land_size_sqft','size_sqft','build_up_sqft','size','build_up','Size','Land Size'),price:get('asking_price_rental','asking_price','asking','price','rental','Asking Price (RM)')||'Contact for price',source,photo:get('cover_photo','photo_url','image_url','photo'),photoFolder:decodedFolder,photos};found.push(x);}}catch(e){}}));
@@ -3472,6 +3472,82 @@ function ephCommissionDashboardStats(){
 function ephScheduleStoryExpiry(){try{clearTimeout(window.__ephStoryExpiryTimer);const items=typeof ephGetStories==='function'?ephGetStories():[];if(!items.length)return;const next=Math.max(1000,Math.min(...items.map(x=>Number(x.createdAt||0)+86400000).filter(Boolean))-Date.now()+100);window.__ephStoryExpiryTimer=setTimeout(()=>{try{if(typeof ephGetStories==='function')ephGetStories();if(typeof ephRenderPublicStories==='function')ephRenderPublicStories();if(typeof currentPage!=='undefined'&&currentPage==='stories'&&typeof render==='function')render();}finally{ephScheduleStoryExpiry();}},next);}catch(e){}}
 window.addEventListener('load',()=>ephScheduleStoryExpiry());
 </script>
+
+<script id="eph-agent-customer-file-view-download">
+(function(){
+  'use strict';
+  // Scoped only to Agent Database and Customer Lead forms. Property Listing forms are untouched.
+  function addFileActions(inputId, data, filename, label){
+    const input=document.getElementById('f_'+inputId);
+    if(!input || !data) return;
+    const parent=input.closest('.form-group') || input.parentElement;
+    if(!parent || parent.querySelector('[data-eph-file-actions="'+inputId+'"]')) return;
+    const wrap=document.createElement('div');
+    wrap.dataset.ephFileActions=inputId;
+    wrap.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:7px';
+    const view=document.createElement('a'); view.className='btn small'; view.textContent='View '+label; view.href=data; view.target='_blank'; view.rel='noopener';
+    const download=document.createElement('a'); download.className='btn small'; download.textContent='Download '+label; download.href=data; download.download=filename||label.toLowerCase().replace(/\s+/g,'-');
+    wrap.append(view,download); parent.appendChild(wrap);
+  }
+  function addCustomerActions(record){
+    if(!record)return;
+    addFileActions('contractFile',record.contractFileData,record.contractFileName,'SPA / Tenancy File');
+  }
+  function addAgentActions(record){
+    if(!record)return;
+    addFileActions('agentFile',record.agentFileData,record.agentFileName,'Agent File');
+    addFileActions('contractFile',record.contractFileData,record.contractFileName,'SPA / Tenancy File');
+  }
+  function afterModal(fn, record){
+    // Wait until the existing form renderer has populated the modal; no form fields or save logic are changed.
+    setTimeout(function(){try{fn(record)}catch(e){console.warn('File view/download controls could not be attached:',e)}},0);
+  }
+  const originalAgentOpen=window.ephAgentOpenForm;
+  if(typeof originalAgentOpen==='function'){
+    window.ephAgentOpenForm=function(agent,isNew){const result=originalAgentOpen.apply(this,arguments);afterModal(addAgentActions,agent);return result;};
+  }
+  const originalOpen=window.openRecord;
+  if(typeof originalOpen==='function'){
+    window.openRecord=function(type){const result=originalOpen.apply(this,arguments);if(type==='lead')afterModal(addCustomerActions,{});return result;};
+  }
+  const originalEdit=window.editRecord;
+  if(typeof originalEdit==='function'){
+    window.editRecord=function(type,id){const record=type==='lead'?(typeof leads!=='undefined'?leads:[]).find(x=>String(x.id)===String(id)):(type==='agent'?(typeof agents!=='undefined'?agents:[]).find(x=>String(x.id)===String(id)||String(x.displayCode)===String(id)):null);const result=originalEdit.apply(this,arguments);if(type==='lead')afterModal(addCustomerActions,record);else if(type==='agent')afterModal(addAgentActions,record);return result;};
+  }
+})();
+</script>
+
+
+<script id="eph-mobile-progressive-photo-load">
+(function(){
+  'use strict';
+  // Show each listing's Drive photos as soon as that folder responds; do not wait for the slowest folder.
+  const hydrate = async function(items){
+    const rows=(items||[]).filter(x=>x&&x.photoFolder&&!(Array.isArray(x.photos)&&x.photos.length>=5)&&!x._ephPhotoHydrating);
+    rows.forEach(x=>x._ephPhotoHydrating=true);
+    await Promise.all(rows.map(async x=>{
+      try{
+        const loader=window.ephLoadDrivePhotos;
+        const urls=typeof loader==='function'?await loader(x.photoFolder):[];
+        if(Array.isArray(urls)&&urls.length){
+          const merged=[];
+          for(const u of [...urls,...(Array.isArray(x.photos)?x.photos:[]),x.photo||'']) if(typeof u==='string'&&u.trim()&&!merged.includes(u)&&merged.length<5)merged.push(u);
+          x.photos=merged;
+          if(merged[0])x.photo=merged[0];
+          if(typeof window.ephRenderAllPublicListingGroups==='function')window.ephRenderAllPublicListingGroups();
+        }
+      }catch(e){console.warn('Listing photo load failed',e)}
+      finally{x._ephPhotoHydrating=false;}
+    }));
+  };
+  hydrate.__ephProgressiveMobile=true;
+  window.ephHydrateDrivePhotos=hydrate;
+  try{ephHydrateDrivePhotos=hydrate;}catch(e){}
+})();
+</script>
+
+
+
 </body></html>
 
 <script id="eph-customer-leads-dedupe-display-20261016">
@@ -4370,6 +4446,60 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
       setTimeout(refreshLivePreview,0);
     }
     return result;
+  };
+})();
+</script>
+
+<script id="eph-auto-delete-expired-viewing-reminders-20261022">
+/* Automatically remove only expired Viewing reminder rows from crm_records.
+   Expiry is based on the Malaysia calendar date (Asia/Kuala_Lumpur): date < today.
+   This does not touch property listings, leads, agents, commissions, agreements, or source form sheets. */
+(function(){
+  function ephTodayMYT(){
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const v={}; parts.forEach(p=>{if(p.type!=='literal')v[p.type]=p.value;});
+    return String(v.year)+'-'+String(v.month)+'-'+String(v.day);
+  }
+  const ephPreviousLoadForExpiry=loadCRMData;
+  let ephExpiryCleanupRunning=false;
+  loadCRMData=async function(){
+    const result=await ephPreviousLoadForExpiry.apply(this,arguments);
+    if(ephExpiryCleanupRunning || !window.EPH_ADMIN_SESSION?.access_token || !Array.isArray(appointments) || typeof ephRequest!=='function') return result;
+    const today=ephTodayMYT();
+    const expired=appointments.filter(a=>{
+      const date=String(a.date||'').trim().slice(0,10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(date) && date<today && a._dbid!==undefined && a._dbid!==null && String(a._dbid)!=='';
+    });
+    if(!expired.length)return result;
+    ephExpiryCleanupRunning=true;
+    const deleted=new Set();
+    try{
+      for(const a of expired){
+        const id=String(a._dbid);
+        try{
+          const before=await ephRequest('/rest/v1/crm_records?select=id,kind&id=eq.'+encodeURIComponent(id)+'&limit=1',{method:'GET'});
+          const row=Array.isArray(before.data)?before.data[0]:null;
+          const rowKind=String(row&&row.kind||'');
+          if(!row || !/viewing|appointment/i.test(rowKind)){console.warn('Expired reminder skipped because its source row is not a viewing/appointment:',id);continue;}
+          const kindFilter='&kind=eq.'+encodeURIComponent(rowKind);
+          await ephRequest('/rest/v1/crm_records?id=eq.'+encodeURIComponent(id)+kindFilter,{method:'DELETE',headers:{Prefer:'return=representation'}});
+          const check=await ephRequest('/rest/v1/crm_records?select=id,kind&id=eq.'+encodeURIComponent(id)+kindFilter+'&limit=1',{method:'GET'});
+          if(Array.isArray(check.data)&&check.data.length===0)deleted.add(id);
+          else console.warn('Expired viewing reminder was not deleted; row remains in Supabase:',id);
+        }catch(err){console.warn('Could not auto-delete expired viewing reminder:',id,err&&err.message||err);}
+      }
+      if(deleted.size){
+        appointments=appointments.filter(a=>!deleted.has(String(a._dbid)));
+        if(typeof window.render==='function')window.render();
+        console.info('Automatically deleted '+deleted.size+' expired viewing reminder(s) before '+today+' MYT.');
+      }
+    }finally{ephExpiryCleanupRunning=false;}
+    return result;
+  };
+  const ephViewingPageBeforeExpiryNote=viewingsPage;
+  viewingsPage=function(){
+    const html=ephViewingPageBeforeExpiryNote.apply(this,arguments);
+    return html.replace('<div class="tabs">','<div class="notice">Automatic cleanup: viewing reminders dated before today (Malaysia time) are deleted from the CRM when Admin data loads. Today and future appointments are kept.</div><div class="tabs">');
   };
 })();
 </script>
