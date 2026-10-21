@@ -3548,7 +3548,7 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
 
 
 
-</body></html>
+
 
 <script id="eph-customer-leads-dedupe-display-20261016">
 (function(){
@@ -4503,3 +4503,108 @@ window.addEventListener('load',()=>ephScheduleStoryExpiry());
   };
 })();
 </script>
+
+
+<script id="eph-chrome-ios-drive-photo-compat-20261022">
+(function(){
+  'use strict';
+  if(window.__ephChromePhotoCompatInstalled)return;
+  window.__ephChromePhotoCompatInstalled=true;
+
+  function driveId(value){
+    const s=String(value||'').trim();
+    if(!s||s.startsWith('data:')||s.startsWith('blob:'))return '';
+    let m=s.match(/drive\.google\.com\/file\/d\/([\w-]+)/i); if(m)return m[1];
+    m=s.match(/[?&]id=([\w-]+)/i); if(m&&/drive\.google\.com/i.test(s))return m[1];
+    m=s.match(/drive\.google\.com\/thumbnail\/([\w-]+)/i); if(m)return m[1];
+    m=s.match(/lh3\.googleusercontent\.com\/d\/([\w-]+)/i); if(m)return m[1];
+    return '';
+  }
+  function canonical(value){
+    const s=String(value||'').trim();
+    if(!s)return s;
+    const id=driveId(s);
+    if(id && /drive\.google\.com\/(?:file\/d\/|open\?|uc\?|thumbnail\/)/i.test(s)){
+      if(/\/thumbnail\//i.test(s))return s;
+      if(/[?&]sz=|[?&]export=download/i.test(s))return s;
+      return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200';
+    }
+    return s;
+  }
+  function candidates(value){
+    const s=String(value||'').trim(),id=driveId(s),out=[];
+    const add=x=>{if(x&&!out.includes(x))out.push(x)};
+    add(canonical(s));add(s);
+    if(id){
+      add('https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1200');
+      add('https://drive.google.com/uc?export=view&id='+encodeURIComponent(id));
+      add('https://drive.google.com/uc?export=download&id='+encodeURIComponent(id));
+    }
+    return out;
+  }
+  function fixImage(img){
+    if(!(img instanceof HTMLImageElement))return;
+    const raw=img.getAttribute('src')||'';
+    if(!raw)return;
+    const normalized=canonical(raw);
+    if(normalized!==raw && !img.dataset.ephCanonicalized){
+      img.dataset.ephCanonicalized='1';
+      img.dataset.ephPhotoCandidates=JSON.stringify(candidates(raw));
+      img.dataset.ephPhotoCandidateIndex='0';
+      img.src=normalized;
+    }
+    const inPublic=!!img.closest('.eph-public-card,.public-card,#ephPublicDetail');
+    if(inPublic){
+      const visible=img.getBoundingClientRect().top < (window.innerHeight||700)*1.4;
+      if(visible){img.loading='eager';img.setAttribute('fetchpriority','high');}
+      else {img.loading='lazy';img.setAttribute('fetchpriority','low');}
+      img.decoding='async';
+      if(!img.hasAttribute('referrerpolicy'))img.setAttribute('referrerpolicy','no-referrer');
+    }
+  }
+  function scan(root){
+    if(!root)return;
+    if(root instanceof HTMLImageElement)fixImage(root);
+    if(root.querySelectorAll)root.querySelectorAll('img').forEach(fixImage);
+    // Repair Google Drive URLs used as cover-photo CSS backgrounds as well.
+    if(root.querySelectorAll){
+      root.querySelectorAll('.public-card-art[style*="background-image"]').forEach(el=>{
+        const style=el.style.backgroundImage;
+        const m=style.match(/url\(["']?(.*?)["']?\)/i);if(!m)return;
+        const url=m[1];const next=canonical(url);
+        if(next!==url)el.style.backgroundImage='url("'+next.replace(/["\\]/g,'')+'")';
+      });
+    }
+  }
+  document.addEventListener('error',function(ev){
+    const img=ev.target;if(!(img instanceof HTMLImageElement))return;
+    const list=(()=>{try{return JSON.parse(img.dataset.ephPhotoCandidates||'[]')}catch(e){return []}})();
+    const raw=img.getAttribute('src')||'';
+    const options=list.length?list:candidates(raw);
+    let index=Number(img.dataset.ephPhotoCandidateIndex||0);
+    if(!list.length){img.dataset.ephPhotoCandidates=JSON.stringify(options);}
+    while(index<options.length && options[index]===raw)index++;
+    if(index<options.length){img.dataset.ephPhotoCandidateIndex=String(index+1);img.src=options[index];return;}
+    img.classList.add('eph-photo-load-failed');
+    img.alt='Photo unavailable — open the Google Drive folder link';
+    img.style.objectFit='contain';
+  },true);
+  scan(document);
+  const observer=new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n);} )));
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  // If listing rows are already in memory, hydrate only folders that have not been attempted.
+  // The existing loader/cache and data model are retained; this is display compatibility only.
+  function start(){
+    try{
+      if(typeof window.ephHydrateDrivePhotos==='function'&&Array.isArray(window.ephPublicAllListings)&&window.ephPublicAllListings.length){
+        Promise.resolve(window.ephHydrateDrivePhotos(window.ephPublicAllListings)).catch(e=>console.warn('Customer photo hydration failed:',e));
+      }
+    }catch(e){console.warn('Customer photo compatibility setup failed:',e);}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else setTimeout(start,0);
+})();
+</script>
+
+</body></html>
